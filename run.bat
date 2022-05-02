@@ -1,0 +1,1 @@
+julia script.jl >> "log.txt"

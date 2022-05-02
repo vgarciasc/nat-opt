@@ -1,0 +1,22 @@
+Running SA (Simulated Annealing).
+	Parameters:
+		C = 15, T0 = 1, K_max = 10
+		 perturbation = gaussian, cooling = log
+		 no_empty_cells = false
+	Running...
+	Results:
+		Time elapsed: 1.687 seconds.
+		Iterations ran: 100.
+		Best solution: 139.932 found after 81 iterations.
+	Saving files to '2022-04-30T19-54-55-898'.
+Running SA (Simulated Annealing).
+	Parameters:
+		C = 15, T0 = 1, K_max = 10
+		 perturbation = gaussian, cooling = log
+		 no_empty_cells = false
+	Running...
+	Results:
+		Time elapsed: 2.073 seconds.
+		Iterations ran: 100.
+		Best solution: 123.868 found after 80 iterations.
+	Saving files to '2022-04-30T20-12-29-503'.
