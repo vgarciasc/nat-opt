@@ -28,10 +28,19 @@ function run_lloyd_algorithm(X, C)
     centroids, history
 end
 
-X = load_clustering_dataset("data/clustering/s1.txt")
-y, history = run_lloyd_algorithm(X, 15)
+if abspath(PROGRAM_FILE) == @__FILE__
+    X = load_clustering_dataset("data/clustering/toy2.txt")
+    y, y_history = run_lloyd_algorithm(X, 2)
 
-anim = @animate for y_i in history
-    plot_points(X, y_i)
+    J_history = [distance_cost(X, y_i) for y_i in y_history]
+    J_min_history = [minimum(J_history[1:j]) for j in 1:size(J_history, 1)]
+    plot_history(
+        J_curr_history=J_history,
+        J_min_history=J_min_history,
+        best_min_iter=argmin(J_history))
+
+    anim = @animate for y_i in history
+        plot_points(X, y_i)
+    end
+    gif(anim, "output/la_1.gif", fps = 5)
 end
-gif(anim, "output/la_1.gif", fps = 5)

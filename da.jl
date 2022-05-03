@@ -10,7 +10,7 @@ function run_generalized_lloyd_algorithm(X, C, T; centroids=nothing)
 
     history = [centroids]
 
-    while size(history, 1) < 2 || history[end] != history[end - 1]
+    while size(history, 1) < 2 || distance(history[end], history[end - 1]) > 0.0001
         if size(history, 1) > 100
             break
         end
@@ -29,36 +29,43 @@ function run_generalized_lloyd_algorithm(X, C, T; centroids=nothing)
 end
 
 function run_deterministic_annealing(X; C, T0, K_max, cooling=:linear)
-    J(y) = distance_cost(X, y)
-    
     # initialization
-    y, J_y = nothing, nothing
-    overall_history = []
-    
+    y = nothing
+    history = []
+
     for k in 1:K_max
         T = calc_temp(cooling, T0, k)
-        y, history = run_generalized_lloyd_algorithm(X, C, T; centroids=y)
-        J_y = J(y)
-        
-        push!(overall_history, (history, J_y, T))
+        y, y_history = run_generalized_lloyd_algorithm(X, C, T; centroids=y)
+
+        append!(history, [(y_i, T) for y_i in y_history])
     end
 
-    full_history = [[(y_i, J_y_t, t) for y_i in h] for (h, J_y_t, t) in overall_history]
-    full_history = collect(Iterators.flatten(full_history))
-
-    y, J_y, full_history
+    y, history
 end
 
-X = load_clustering_dataset("data/clustering/toy1.txt")
+X = load_clustering_dataset("data/clustering/r15.txt")
 
-y, history = run_generalized_lloyd_algorithm(X, 2, 0.5)
-anim = @animate for y_i in history
-    plot_points(X, y_i)
-end
-gif(anim, "output/gla_1.gif", fps = 5)
+# y, history = run_generalized_lloyd_algorithm(X, 2, 0.5)
+# anim = @animate for y_i in history
+#     plot_points(X, y_i)
+# end
+# gif(anim, "output/gla_1.gif", fps = 5)
 
-y, _, history = run_deterministic_annealing(X, C=2, T0=1, K_max=5, cooling=:linear)
-anim = @animate for (y_i, J_y_t, t) in history
-    plot_points(X, y_i, J_y=J_y_t, T=t)
+if abspath(PROGRAM_FILE) == @__FILE__
+    y, history = run_deterministic_annealing(X, C=15, T0=0.5, K_max=200, cooling=:linear)
+
+    y_history, T_history = unzip(map(Tuple, history))
+    temp_drops = [i for (i, t) in enumerate(T_history[1:end-1]) if t != T_history[i+1]]
+    J_history = [distance_cost(X, y_i) for y_i in y_history]
+    J_min_history = [minimum(J_history[1:j]) for j in 1:size(J_history, 1)]
+    plot_history(
+        J_curr_history=J_history,
+        J_min_history=J_min_history,
+        temp_drops=temp_drops,
+        best_min_iter=argmin(J_history))
+
+    anim = @animate for (y_i, t) in history
+        plot_points(X, y_i, J_y=distance_cost(X, y_i), T=t)
+    end
+    gif(anim, "output/da_1.gif", fps = 5)
 end
-gif(anim, "output/da_1.gif", fps = 5)

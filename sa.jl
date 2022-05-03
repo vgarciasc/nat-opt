@@ -21,56 +21,54 @@ function run_sa_clustering(X; D=2, C=2, N=10, K_max=10,
     iter = 1
     best_min_iter = -1
         
-    elapsed_time = @elapsed begin
-        for k in 1:K_max
-            T = calc_temp(cooling, T0, k)
+    for k in 1:K_max
+        T = calc_temp(cooling, T0, k)
 
-            printv("Temperature: $(T)", verbose)
-            push!(temp_drops, iter)
+        printv("Temperature: $(T)", verbose)
+        push!(temp_drops, iter)
 
-            for n in 1:N
-                iter += 1
+        for n in 1:N
+            iter += 1
 
-                y_hat = perturb_solution(y_curr, ϵ, perturbation)
-                J_hat = J(y_hat)
+            y_hat = perturb_solution(y_curr, ϵ, perturbation)
+            J_hat = J(y_hat)
 
-                if no_empty_cells
-                    curr_assignments = get_cluster_assignments(X, y_hat)
-                    cluster_pops = [sum([1 for y_i in curr_assignments if y_i == c]) for c in 1:C]
-                    largest_cluster = argmax(cluster_pops)
-                    empty_cell_found = false
+            if no_empty_cells
+                curr_assignments = get_cluster_assignments(X, y_hat)
+                cluster_pops = [sum([1 for y_i in curr_assignments if y_i == c]) for c in 1:C]
+                largest_cluster = argmax(cluster_pops)
+                empty_cell_found = false
 
-                    for c in 1:C
-                        if cluster_pops[c] == 0
-                            empty_cell_found = true
-                            y_hat[c, :] = perturb_solution(y_hat[largest_cluster, :], ϵ, perturbation)
-                        end
-                    end
-
-                    if empty_cell_found
-                        J_hat = J(y_hat)
+                for c in 1:C
+                    if cluster_pops[c] == 0
+                        empty_cell_found = true
+                        y_hat[c, :] = perturb_solution(y_hat[largest_cluster, :], ϵ, perturbation)
                     end
                 end
 
-                printv("\tJ_hat: $(J_hat) \tJ_curr: $(J_curr) \tJ_min: $(J_min)", verbose)
-                push!(J_history, [J_curr, J_min])
+                if empty_cell_found
+                    J_hat = J(y_hat)
+                end
+            end
 
-                if rand() <= exp((J_curr - J_hat) / T)
-                    y_curr = y_hat
-                    J_curr = J_hat
+            printv("\tJ_hat: $(J_hat) \tJ_curr: $(J_curr) \tJ_min: $(J_min)", verbose)
+            push!(J_history, [J_curr, J_min])
 
-                    if J_curr < J_min
-                        y_min = y_curr
-                        J_min = J_curr
+            if rand() <= exp((J_curr - J_hat) / T)
+                y_curr = y_hat
+                J_curr = J_hat
 
-                        best_min_iter = iter
-                    end
+                if J_curr < J_min
+                    y_min = y_curr
+                    J_min = J_curr
+
+                    best_min_iter = iter
                 end
             end
         end
     end
 
-    history = (J_history, temp_drops, best_min_iter, elapsed_time)
+    history = (J_history, temp_drops, best_min_iter)
     y_min, J_min, history
 end
 
@@ -78,16 +76,18 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # X = generate_dataset(C=5, N=100, ϵ=0.05)
     X = load_clustering_dataset("data/clustering/s1.txt")
 
-    T0 = 1
-    K_max = 10
-    N = 100
-    C = 15
-
     y, J_y, history = @time run_sa_clustering(
-        X, C=C, T0=T0, K_max=K_max, N=N, 
+        X, C=15, T0=1, K_max=10, N=100, 
         perturbation=:cauchy, cooling=:linear,
         no_empty_cells=true, verbose=false)
-
+    
     plot_points(X, y; J_y)
-    plot_history(history)
+    
+    J_history, temp_drops, best_min_iter, _ = history
+    J_curr_history, J_min_history = unzip(map(Tuple, J_history))
+    plot_history(
+        J_curr_history=J_curr_history,
+        best_min_iter=best_min_iter,
+        J_min_history=J_min_history,
+        temp_drops=temp_drops)
 end

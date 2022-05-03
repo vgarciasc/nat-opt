@@ -23,28 +23,40 @@ function plot_points(X, y; J_y=nothing, T=nothing)
         title_str *= "Final solution with value J(\$x_{min}\$) = $(round(J_y, digits=3)).\n"
     end
     if T !== nothing
-        title_str *= "Temperature: $(T)"
+        title_str *= "Temperature: $(round(T, digits=3))"
     end
     title!(plt, title_str)
 
     plt
 end
 
-function plot_history(history)
-    J_history, temp_drops, best_min_iter, _ = history
-    J_curr_history, J_min_history = unzip(map(Tuple, J_history))
+function plot_history(; J_curr_history, best_min_iter=-1,
+    J_min_history=[], temp_drops=[])
     
+    title_str = ""
+
     pyplot()
     plt = plot(size=(800, 600))
     plot!(plt, 1:size(J_curr_history, 1), J_curr_history, label="J_curr")
-    plot!(plt, 1:size(J_min_history, 1), J_min_history, label="J_min")
-    vline!(temp_drops, color=:lightgray, linestyle=:dash,
-        label="Temperature drops")
     
-    ylims!(plt, (0, J_curr_history[20]))
+    if J_min_history != []
+        title_str *= "Best solution \$J_{min} = $(round(J_min_history[end], digits=3))\$.\n"
+        plot!(plt, 1:size(J_min_history, 1), J_min_history, label="J_min")
+    end
+    if temp_drops != []
+        vline!(temp_drops, color=:lightgray, linestyle=:dash,
+            label="Temperature drops")
+    end
+    if best_min_iter != -1
+        title_str *= "Best solution found at iteration $(best_min_iter)."
+    end
+    
+    if size(J_curr_history, 1) > 100
+        ylims!(plt, (0, J_curr_history[20]))
+    end
     ylabel!(plt, "Cost function")
     xlabel!(plt, "Iterations")
-    title!(plt, "Best solution \$J_{min} = $(round(J_min_history[end], digits=3))\$ 
-        found at iteration $(best_min_iter).")
+    title!(plt, title_str)
+
     plt
 end
