@@ -16,7 +16,8 @@ function generate_dataset(; C=2, N=10, ϵ=0.1)
     centers = []
     
     for c in 1:C
-        random_center = rand(Uniform(0.2, 0.8), (1, 2))
+        # random_center = rand(Uniform(0.2, 0.8), (1, 2))
+        random_center = [(c % 5) / 10, floor(c / 5) / 10]
         push!(centers, random_center)
         
         for n in 1:N

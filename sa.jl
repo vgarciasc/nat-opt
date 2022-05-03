@@ -75,11 +75,12 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     X, y_sol = generate_dataset(C=10, N=100, ϵ=0.05)
     println("J_opt = $(distance_cost(X, y_sol))")
+    plot_points(X, y_sol)
 
     # X = load_clustering_dataset("data/clustering/s1.txt")
 
     y, J_y, history = @time run_sa_clustering(
-        X, C=10, T0=0.5, K_max=100, N=1000,
+        X, C=10, T0=0.5, K_max=100, N=100,
         perturbation=:gaussian, cooling=:log,
         no_empty_cells=true, verbose=false)
     
