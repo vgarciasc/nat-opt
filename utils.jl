@@ -13,9 +13,11 @@ end
 
 function generate_dataset(; C=2, N=10, ϵ=0.1)
     points = []
+    centers = []
     
     for c in 1:C
         random_center = rand(Uniform(0.2, 0.8), (1, 2))
+        push!(centers, random_center)
         
         for n in 1:N
             point = random_center + ϵ * rand(Normal(0.0, 1.0), (1, 2))
@@ -23,7 +25,9 @@ function generate_dataset(; C=2, N=10, ϵ=0.1)
         end
     end
 
-    reduce(vcat, points)
+    points = reduce(vcat, points)
+    centers = reduce(vcat, centers)
+    points, centers
 end
 
 function load_clustering_dataset(filename)

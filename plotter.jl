@@ -3,7 +3,7 @@ using Plots
 
 include("utils.jl")
 
-function plot_points(X, y; J_y=nothing, T=nothing)
+function plot_points(X, y; base_title="", J_y=nothing, T=nothing)
     pyplot()
     
     plt = plot(size=(800, 600))
@@ -18,7 +18,7 @@ function plot_points(X, y; J_y=nothing, T=nothing)
     xlims!(plt, (-0.1, 1.1))
     ylims!(plt, (-0.1, 1.1))
     
-    title_str = ""
+    title_str = base_title
     if J_y !== nothing
         title_str *= "Final solution with value J(\$x_{min}\$) = $(round(J_y, digits=3)).\n"
     end
@@ -30,15 +30,14 @@ function plot_points(X, y; J_y=nothing, T=nothing)
     plt
 end
 
-function plot_history(; J_curr_history, best_min_iter=-1,
+function plot_history(; base_title="", J_curr_history, best_min_iter=-1,
     J_min_history=[], temp_drops=[])
     
-    title_str = ""
-
     pyplot()
     plt = plot(size=(800, 600))
     plot!(plt, 1:size(J_curr_history, 1), J_curr_history, label="J_curr")
     
+    title_str = base_title
     if J_min_history != []
         title_str *= "Best solution \$J_{min} = $(round(J_min_history[end], digits=3))\$.\n"
         plot!(plt, 1:size(J_min_history, 1), J_min_history, label="J_min")
@@ -51,9 +50,9 @@ function plot_history(; J_curr_history, best_min_iter=-1,
         title_str *= "Best solution found at iteration $(best_min_iter)."
     end
     
-    if size(J_curr_history, 1) > 100
-        ylims!(plt, (0, J_curr_history[20]))
-    end
+    # if size(J_curr_history, 1) > 100
+        # ylims!(plt, (0, J_curr_history[20]))
+    # end
     ylabel!(plt, "Cost function")
     xlabel!(plt, "Iterations")
     title!(plt, title_str)

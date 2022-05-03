@@ -73,15 +73,19 @@ function run_sa_clustering(X; D=2, C=2, N=10, K_max=10,
 end
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    # X = generate_dataset(C=5, N=100, ϵ=0.05)
-    X = load_clustering_dataset("data/clustering/s1.txt")
+    X, y_sol = generate_dataset(C=10, N=100, ϵ=0.05)
+    println("J_opt = $(distance_cost(X, y_sol))")
+
+    # X = load_clustering_dataset("data/clustering/s1.txt")
 
     y, J_y, history = @time run_sa_clustering(
-        X, C=15, T0=1, K_max=10, N=100, 
-        perturbation=:cauchy, cooling=:linear,
+        X, C=10, T0=0.5, K_max=100, N=1000,
+        perturbation=:gaussian, cooling=:log,
         no_empty_cells=true, verbose=false)
     
+    println("J_min = $(distance_cost(X, y))")
     plot_points(X, y; J_y)
+    plot_points(X, y_sol; J_y)
     
     J_history, temp_drops, best_min_iter, _ = history
     J_curr_history, J_min_history = unzip(map(Tuple, J_history))
