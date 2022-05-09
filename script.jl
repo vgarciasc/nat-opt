@@ -6,13 +6,14 @@ include("da.jl")
 include("datasets.jl")
 
 function run_and_save_results_sa(df, n_samples=1; C, T0, K_max, N, ϵ,
-    perturbation, cooling, no_empty_cells, should_plot=false)
+    perturbation=:gaussian, cooling=:log, no_empty_cells=false,
+    use_partition_rep=false, should_plot=false)
 
     println("Running SA (Simulated Annealing).")
     println("\tParameters:")
-    println("\t\tC = $(C), T0 = $(T0), K_max = $(K_max)")
+    println("\t\tC = $(C), T0 = $(T0), K_max = $(K_max), N = $(N), ϵ = $(ϵ)")
     println("\t\t perturbation = $(perturbation), cooling = $(cooling)")
-    println("\t\t no_empty_cells = $(no_empty_cells)")
+    println("\t\t no_empty_cells = $(no_empty_cells), use_partition_rep = $(use_partition_rep)")
     
     elapsed_times = []
     J_mins = []
@@ -22,13 +23,18 @@ function run_and_save_results_sa(df, n_samples=1; C, T0, K_max, N, ϵ,
     println("\tRunning...")
     for sample in 1:n_samples
         elapsed_time = @elapsed begin
-            y_min, J_min, history = run_sa_clustering(
-                X, C=C, T0=T0, K_max=K_max, N=N, ϵ=ϵ,
-                perturbation=perturbation, cooling=cooling, 
-                no_empty_cells=no_empty_cells)
+            if use_partition_rep
+                y_min, J_min, history = run_sa_clustering_by_partition(
+                    X, C=C, ϵ=ϵ, T0=T0, K_max=K_max, N=N, cooling=cooling)
+            else
+                y_min, J_min, history = run_sa_clustering(
+                    X, C=C, T0=T0, K_max=K_max, N=N, ϵ=ϵ,
+                    perturbation=perturbation, cooling=cooling, 
+                    no_empty_cells=no_empty_cells)
+            end
         end
         
-        J_history, temp_drops, best_min_iter = history
+        J_history, y_history, temp_drops, best_min_iter = history
         J_curr_history, J_min_history = unzip(map(Tuple, J_history))
 
         push!(iterations_ran, size(J_history, 1))
@@ -44,22 +50,27 @@ function run_and_save_results_sa(df, n_samples=1; C, T0, K_max, N, ϵ,
     
             plt = plot_points(X, y_min; J_y=J_min, base_title=base_title)
             png(plt, "output/$(filecode)_solution.png")
-            plt = plot_history(
-                J_curr_history=J_curr_history,
-                best_min_iter=best_min_iter,
-                J_min_history=J_min_history,
-                temp_drops=temp_drops,
-                base_title=base_title)
-            png(plt, "output/$(filecode)_history.png")
+            # plt = plot_history(
+            #     J_curr_history=J_curr_history,
+            #     best_min_iter=best_min_iter,
+            #     J_min_history=J_min_history,
+            #     temp_drops=temp_drops,
+            #     base_title=base_title)
+            # png(plt, "output/$(filecode)_history.png")
         end
     end
 
     println("\tResults:")
-    println("\t\tAverage iterations ran: $(round(mean(iterations_ran), digits=3)).")
-    println("\t\tAverage time elapsed: $(round(mean(elapsed_times), digits=3)) seconds.")
-    println("\t\tBest solution overall: $(round(minimum(J_mins), digits=3))")
-    println("\t\tAverage best solution: $(round(mean(J_mins), digits=3))")
-    println("\t\tAverage best min iters: $(round(mean(best_min_iters), digits=3))")
+    println("\t\tAverage iterations ran:
+         $(round(mean(iterations_ran), digits=3)).")
+    println("\t\tAverage time elapsed:
+         $(round(mean(elapsed_times), digits=3)) seconds.")
+    println("\t\tBest solution overall:
+         $(round(minimum(J_mins), digits=3))")
+    println("\t\tAverage best solution:
+         $(round(mean(J_mins), digits=3))")
+    println("\t\tAverage best min iters:
+         $(round(mean(best_min_iters), digits=3))")
 end
 
 function run_and_save_results_da(df, n_samples=1;
@@ -211,4 +222,33 @@ run_and_save_results_gla(df, 100, C=df["k"], T0=0.01, should_plot=true)
 run_and_save_results_gla(df, 100, C=df["k"], T0=0.005, should_plot=true)
 run_and_save_results_gla(df, 100, C=df["k"], T0=0.001, should_plot=true)
 
-run_and_save_results_gla(df, 1, C=df["k"], T0=1, should_plot=true)
+run_and_save_results_gla(df, 1, C=df["k"], T0=0.001, should_plot=true)
+
+run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.1, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.01, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.0001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=10, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.01, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.001, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.0001, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=10, N=100, ϵ=0.001, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+
+run_and_save_results_sa(df, 1, C=df["k"], T0=1, K_max=10, N=100, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+
+run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=10, N=100, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=10, N=100, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=10, N=100, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.01, K_max=10, N=100, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.01, K_max=100, N=1000, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=1000, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=10, N=1000, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=1000, ϵ=10, cooling=:log, use_partition_rep=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=10, N=1000, ϵ=10, cooling=:log, use_partition_rep=true, should_plot=true)

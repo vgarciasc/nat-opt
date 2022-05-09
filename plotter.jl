@@ -3,12 +3,20 @@ using Plots
 
 include("utils.jl")
 
-function plot_points(X, y; base_title="", J_y=nothing, T=nothing)
+function plot_points(X, y; base_title="", J_y=nothing, T=nothing, assignments=[])
     pyplot()
-    
+
+    function get_assignment(i, x_i, centroids, assignments)
+        if assignments == []
+            get_cluster_assignment(x_i, centroids)
+        else
+            assignments[i]
+        end
+    end
+
     plt = plot(size=(800, 600))
     for c in 1:size(y, 1)
-        X_c = [x_i for x_i in eachrow(X) if get_cluster_assignment(x_i, y) == c]
+        X_c = [x_i for (i, x_i) in enumerate(eachrow(X)) if get_assignment(i, x_i, y, assignments) == c]
         if size(X_c, 1) > 0
             X_c = reduce(hcat, X_c)'
             scatter!(plt, X_c[:, 1], X_c[:, 2], msw=0, label="Cluster $(c)")
