@@ -1,4 +1,5 @@
 include("utils.jl")
+include("datasets.jl")
 include("plotter.jl")
 
 function run_generalized_lloyd_algorithm(X, C, T; centroids=nothing)
@@ -52,7 +53,10 @@ X = load_clustering_dataset("data/clustering/r15.txt")
 # gif(anim, "output/gla_1.gif", fps = 5)
 
 if abspath(PROGRAM_FILE) == @__FILE__
-    y, history = run_deterministic_annealing(X, C=15, T0=0.5, K_max=200, cooling=:linear)
+    df = datasets["toy2"]
+    X = load_clustering_dataset(df["path"])
+
+    y, history = run_deterministic_annealing(X, C=df["k"], T0=1, K_max=10, cooling=:linear)
 
     y_history, T_history = unzip(map(Tuple, history))
     temp_drops = [i for (i, t) in enumerate(T_history[1:end-1]) if t != T_history[i+1]]
@@ -67,5 +71,5 @@ if abspath(PROGRAM_FILE) == @__FILE__
     anim = @animate for (y_i, t) in history
         plot_points(X, y_i, J_y=distance_cost(X, y_i), T=t)
     end
-    gif(anim, "output/da_1.gif", fps = 5)
+    gif(anim, "output/da_$(df["name"]).gif", fps = 10)
 end

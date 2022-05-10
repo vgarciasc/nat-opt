@@ -13,6 +13,13 @@ datasets = Dict(
         "d" => 2,
         "path" => "data/clustering/r15.txt"
     ),
+    "dim2" => Dict(
+        "name" => "dim2",
+        "n" => 1351,
+        "k" => 15,
+        "d" => 2,
+        "path" => "data/clustering/dim2.txt"
+    ),
     "dim032" => Dict(
         "name" => "dim032",
         "n" => 1024,

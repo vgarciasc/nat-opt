@@ -180,9 +180,16 @@ function run_and_save_results_gla(df, n_samples=1;
     println("\t\tAverage best min iters: $(round(mean(best_min_iters), digits=3))")
 end
 
-df = datasets["r15"]
-
+df = datasets["a1"]
 X = load_clustering_dataset(df["path"])
+
+# pyplot()
+# plt = scatter(X[:, 1], X[:, 2], msw=0, color=:grey, legend=false)
+# xlims!(plt, (-0.1, 1.1))
+# ylims!(plt, (-0.1, 1.1))
+# title!(plt, "Dataset $(df["name"])")
+# xlabel!(plt, "\$x_1\$")
+# ylabel!(plt, "\$x_2\$")
 
 run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=10, N=10, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=false)
 run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=10, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=false)
@@ -205,11 +212,17 @@ run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=10, ϵ=0.1, pertur
 run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=1000, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true)
 
+run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=1000, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true)
+
 run_and_save_results_da(df, 10, C=df["k"], T0=1, K_max=10, cooling=:linear, should_plot=true)
 run_and_save_results_da(df, 10, C=df["k"], T0=1, K_max=100, cooling=:linear, should_plot=true)
 run_and_save_results_da(df, 10, C=df["k"], T0=0.5, K_max=100, cooling=:linear, should_plot=true)
 run_and_save_results_da(df, 10, C=df["k"], T0=0.1, K_max=100, cooling=:linear, should_plot=true)
 run_and_save_results_da(df, 10, C=df["k"], T0=0.01, K_max=100, cooling=:log, should_plot=true)
+
+run_and_save_results_da(df, 1, C=df["k"], T0=0.1, K_max=100, cooling=:linear, should_plot=true)
 
 run_and_save_results_da(df, 1, C=15, T0=0.5, K_max=200, cooling=:linear)
 run_and_save_results_da(df, 1, C=df["k"], T0=0.1, K_max=100, cooling=:linear, should_plot=true)
@@ -252,3 +265,41 @@ run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=1000, ϵ=1, cooli
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=10, N=1000, ϵ=1, cooling=:log, use_partition_rep=true, should_plot=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=1000, ϵ=10, cooling=:log, use_partition_rep=true, should_plot=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=10, N=1000, ϵ=10, cooling=:log, use_partition_rep=true, should_plot=true)
+
+run_and_save_results_sa(df, 1, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+
+df = datasets["dim2"]
+X = load_clustering_dataset(df["path"])
+
+println("-- DA -- \n")
+run_and_save_results_da(df, 10, C=df["k"], T0=1, K_max=10, cooling=:linear, should_plot=true)
+run_and_save_results_da(df, 10, C=df["k"], T0=1, K_max=100, cooling=:linear, should_plot=true)
+run_and_save_results_da(df, 10, C=df["k"], T0=0.5, K_max=100, cooling=:linear, should_plot=true)
+run_and_save_results_da(df, 10, C=df["k"], T0=0.1, K_max=100, cooling=:linear, should_plot=true)
+run_and_save_results_da(df, 10, C=df["k"], T0=0.5, K_max=1000, cooling=:linear, should_plot=true)
+
+println("-- GLA -- \n")
+run_and_save_results_gla(df, 100, C=df["k"], T0=1, should_plot=true)
+run_and_save_results_gla(df, 100, C=df["k"], T0=0.5, should_plot=true)
+run_and_save_results_gla(df, 100, C=df["k"], T0=0.1, should_plot=true)
+run_and_save_results_gla(df, 100, C=df["k"], T0=0.05, should_plot=true)
+run_and_save_results_gla(df, 100, C=df["k"], T0=0.01, should_plot=true)
+run_and_save_results_gla(df, 100, C=df["k"], T0=0.005, should_plot=true)
+run_and_save_results_gla(df, 100, C=df["k"], T0=0.001, should_plot=true)
+
+println("-- SA -- \n")
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.01, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=0.1, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=0.01, perturbation=:gaussian, cooling=:log, no_empty_cells=true, should_plot=true)
+
+println("-- FSA -- \n")
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=0.1, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=0.01, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+
+println("-- SA-P -- \n")
+run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=100, ϵ=5, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=false)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=5, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=false)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=5, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=false)

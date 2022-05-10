@@ -78,7 +78,7 @@ function run_sa_clustering_by_partition(X; D=2, C=2, N=10, K_max=10, ϵ=1,
 
     function J(y)
         centroids = get_centroids(X, C, y)
-        sum([distance(x, centroids[y[i]]) for (i, x_i) in enumerate(eachrow(X))])
+        sum([distance(x_i, centroids[y[i], :]) for (i, x_i) in enumerate(eachrow(X))])
     end
     
     y_0 = rand(1:C, size(X)[1])
@@ -136,15 +136,15 @@ if abspath(PROGRAM_FILE) == @__FILE__
     # X = load_clustering_dataset("data/clustering/s1.txt")
 
     y, J_y, history = @time run_sa_clustering(
-        X, C=10, T0=0.5, K_max=100, N=100,
+        X, C=2, T0=1, K_max=10, N=1000,
         perturbation=:gaussian, cooling=:log,
-        no_empty_cells=true, verbose=false)
+        no_empty_cells=false, verbose=false)
     
     println("J_min = $(distance_cost(X, y))")
     plot_points(X, y; J_y)
     plot_points(X, y_sol; J_y)
     
-    J_history, temp_drops, best_min_iter, _ = history
+    J_history, _, temp_drops, best_min_iter = history
     J_curr_history, J_min_history = unzip(map(Tuple, J_history))
     plot_history(
         J_curr_history=J_curr_history,
@@ -156,7 +156,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
     X = load_clustering_dataset(df["path"])
 
     y, J_y, history = @time run_sa_clustering_by_partition(
-        X, C=2, D=2, N=10, K_max=10, ϵ=10, T0=1, cooling=:log, verbose=false)
+        X, C=2, D=2, N=1000, K_max=10, ϵ=10, T0=1, cooling=:log, verbose=false)
     J_history, y_history, _, _ = history
 
     anim = @animate for y_i in y_history
