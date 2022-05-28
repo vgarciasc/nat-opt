@@ -12,10 +12,7 @@ def get_treeviz(config, tree):
 
     while len(stack) > 0:
         node, depth = stack.pop()
-
-        output += "\n"
-        output += "-" * depth
-        output += " "
+        output += "-" * depth + " "
 
         if node.is_leaf:
             output += (config['actions'][node.label]).upper()
@@ -28,6 +25,7 @@ def get_treeviz(config, tree):
                 stack.append((node.right, depth + 1))
             if node.left:
                 stack.append((node.left, depth + 1))
+        output += "\n"
 
     return output
 
