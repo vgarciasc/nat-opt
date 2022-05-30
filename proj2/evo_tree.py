@@ -16,7 +16,7 @@ class EvoTreeNode(TreeNode):
         super(EvoTreeNode, self).__init__(**kwargs)
 
     def get_random_node(self):
-        random_idx = np.random.randint(0, self.get_tree_size())
+        random_idx = np.random.randint(1, self.get_tree_size())
         stack = [self]
         processed = []
 
@@ -67,7 +67,23 @@ class EvoTreeNode(TreeNode):
     
     def mutate_label(self, verbose=False):
         printv("Mutating label...", verbose)
-        self.label = np.random.randint(self.config["n_actions"])
+        gen_label = lambda : np.random.randint(self.config["n_actions"])
+
+        if self.parent is not None:
+            if self == self.parent.left:
+                other_label = self.parent.right.label
+            elif self == self.parent.right:
+                other_label = self.parent.left.label
+            else:
+                other_label = self.label
+            
+            new_label = gen_label()
+            while new_label == other_label:
+                new_label = gen_label()
+        else:
+            new_label = gen_label()
+        
+        self.label = new_label
 
     def mutate_is_leaf(self, verbose=False):
         printv("Mutating is leaf...", verbose)
@@ -76,12 +92,19 @@ class EvoTreeNode(TreeNode):
         if self.is_leaf:
             self.left = None
             self.right = None
+        else:
+            self.left = EvoTreeNode.generate_random_node(self.config, True)
+            self.right = EvoTreeNode.generate_random_node(self.config, True)
 
     def mutate(self, sigma=None):
         node = self.get_random_node()
 
         if node.is_leaf:
-            node.mutate_label()
+            operation = np.random.choice(["label", "is_leaf"])
+            if operation == "label":
+                node.mutate_label()
+            elif operation == "is_leaf":
+                node.mutate_is_leaf()
         else:
             operation = np.random.choice(["attribute", "threshold", "is_leaf"])
             if operation == "attribute":

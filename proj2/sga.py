@@ -17,16 +17,17 @@ def calc_fitness(tree, episodes=10):
     return mean
 
 def tournament_selection(population, q):
-    candidates = np.random.choice(population, size=q)
-    return max(candidates, key=lambda x : x.fitness)
+    np.random.shuffle(population)
+    return max(population[:q], key=lambda x : x.fitness)
 
 def run_genetic_algorithm(config, popsize, p_crossover, p_mutation, 
-    generations, initial_sigma_max, initial_depth, alpha, q, repclass,
-    should_plot=False, should_render=False,
-    verbose=False):
+    generations, initial_sigma_max, initial_depth, alpha, tournament_size,
+    repclass, fit_episodes=10, 
+    should_plot=False, should_render=False, render_every=None, verbose=False):
 
     # Initialization
-    population = [repclass.generate_random_tree(config, depth=initial_depth,
+    population = [repclass.generate_random_tree(
+                    config, depth=initial_depth,
                     sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"]))
                   for _ in range(popsize)]
     best = None
@@ -39,13 +40,13 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
     for generation in range(generations):
         new_population = []
         for _ in range(popsize//2):
-            parent_a = tournament_selection(population, q)
-            parent_b = tournament_selection(population, q)
+            parent_a = tournament_selection(population, tournament_size)
+            parent_b = tournament_selection(population, tournament_size)
 
             if np.random.uniform(0, 1) < p_crossover:
                 child_a, child_b = repclass.crossover(parent_a, parent_b)
             else:
-                child_a, child_b = parent_a, parent_b
+                child_a, child_b = parent_a.copy(), parent_b.copy()
             
             if np.random.uniform(0, 1) < p_mutation:
                 child_a.mutate()
@@ -58,14 +59,20 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
         population = new_population
 
         for individual in population:
-            individual.reward = calc_fitness(individual)
-            individual.fitness = individual.reward - alpha * individual.get_tree_size()
+            individual.reward = calc_fitness(individual, episodes=fit_episodes)
+        avg_reward = np.mean([i.reward for i in population])
+        curr_alpha = 0 if avg_reward == config["min_score"] else alpha
+
+        for individual in population:
+            individual.fitness = individual.reward - curr_alpha * individual.get_tree_size()
 
             if best is None or individual.fitness > best.fitness:
-                best = copy.deepcopy(individual)
-        
-        if best.reward >= config["max_score"]:
-            break
+                best = individual.copy()
+
+        population += [best]
+
+        # if best.reward >= config["max_score"]:
+        #     break
 
         # Printing and plotting
         min_reward = best.reward
@@ -76,8 +83,8 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
         std_size = np.std([i.get_tree_size() for i in population])
         
         console.rule(f"[bold red]Generation #{generation}")
-        printv(f"[underline]Reward[/underline]: {{[green]Best: {min_reward}[/green], [yellow]Avg: {avg_reward})[/yellow]}}", verbose)
-        printv(f"[underline]Size  [/underline]: {{[green]Best: {min_size}[/green], [yellow]Avg: {avg_size})[/yellow]}}", verbose)
+        printv(f"[underline]Reward[/underline]: {{[green]Best: {min_reward}[/green], [yellow]Avg: {avg_reward}[/yellow]}}", verbose)
+        printv(f"[underline]Size  [/underline]: {{[green]Best: {min_size}[/green], [yellow]Avg: {avg_size}[/yellow]}}", verbose)
         printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose)
         printv(f"{' ' * 3} - Avg Sigma: {np.mean([i.sigma for i in population], axis=0)}", verbose)
 
@@ -91,7 +98,7 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
         avg_sizes = np.array(avg_sizes)
         std_sizes = np.array(std_sizes)
 
-        if should_render and generation % 5 == 0:
+        if should_render and generation % render_every == 0:
             utils.evaluate_fitness(config, best, episodes=1, render=True)
 
         if should_plot:
@@ -122,14 +129,29 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
 if __name__ == "__main__":
     history = []
 
-    for _ in range(2):
+    for _ in range(50):
+        # tree, reward, size = run_genetic_algorithm(
+        #     config=get_config("cartpole"),
+        #     popsize=50, p_crossover=0.8, p_mutation=0.05,
+        #     generations=100, initial_sigma_max=1, initial_depth=3, 
+        #     alpha=5, tournament_size=20, repclass=AAETNode, 
+        #     verbose=True, should_plot=False)
+        # tree, reward, size = run_genetic_algorithm(
+        #     config=get_config("mountain_car"),
+        #     popsize=50, p_crossover=0.8, p_mutation=0.2,
+        #     generations=100, initial_sigma_max=1, initial_depth=3, 
+        #     alpha=5, tournament_size=20, repclass=AAETNode, 
+        #     verbose=True, should_plot=False)
         tree, reward, size = run_genetic_algorithm(
-            config=get_config("cartpole"),
-            popsize=50, p_crossover=0.8, p_mutation=0.05,
-            generations=200, initial_sigma_max=1, initial_depth=2, 
-            alpha=1, q=10, repclass=AAETNode, verbose=True,
-            should_plot=True)
+            config=get_config("lunar_lander"),
+            popsize=50, p_crossover=0.8, p_mutation=0.2,
+            generations=200, initial_sigma_max=1, initial_depth=5, 
+            alpha=1, tournament_size=10, repclass=AAETNode, 
+            fit_episodes=10, 
+            verbose=True, should_plot=False)
         history.append((tree, reward, size))
+        print(history)
+        utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
 
     trees, rewards, sizes = zip(*history)
     print(f"[green][bold]Average reward[/bold]: {np.mean(rewards)}[/green]")
