@@ -1,35 +1,14 @@
 import numpy as np
 import gym
-from rich import print
+from rich.console import Console
+
+console = Console()
 
 def printv(str, verbose=False):
     if verbose:
-        print(str)
+        console.log(str)
 
-def get_treeviz(config, tree):
-    stack = [(tree, 1)]
-    output = ""
-
-    while len(stack) > 0:
-        node, depth = stack.pop()
-        output += "-" * depth + " "
-
-        if node.is_leaf:
-            output += (config['actions'][node.label]).upper()
-        else:
-            output += config['attributes'][node.attribute][0]
-            output += " <= "
-            output += '{:.3f}'.format(node.threshold)
-            
-            if node.right:
-                stack.append((node.right, depth + 1))
-            if node.left:
-                stack.append((node.left, depth + 1))
-        output += "\n"
-
-    return output
-
-def evaluate_fitness(config, tree, episodes=10, verbose=False):
+def evaluate_fitness(config, tree, episodes=10, render=False, verbose=False):
     env = gym.make(config["name"])
     total_rewards = []
 
@@ -41,6 +20,8 @@ def evaluate_fitness(config, tree, episodes=10, verbose=False):
         
         while not done:
             action = tree.act(state)
+            if render:
+                env.render()
             raw_next_state, reward, done, _ = env.step(action)
             next_state = config['conversion_fn'](env, raw_state, raw_next_state)
 
@@ -53,3 +34,13 @@ def evaluate_fitness(config, tree, episodes=10, verbose=False):
     
     env.close()
     return np.mean(total_rewards), np.std(total_rewards)
+
+def crossover_float_intermediary(parent_a, parent_b):
+    assert len(parent_a) == len(parent_b)
+
+    idx = np.random.randint(0, len(parent_a))
+
+    child = np.copy(parent_a)
+    child[idx] = (parent_a[idx] + parent_b[idx]) / 2
+
+    return child

@@ -5,7 +5,7 @@ import numpy as np
 config_CP = {
     "name": "CartPole-v1",
     "can_render": True,
-    "episode_max_score": 195,
+    "max_score": 500,
     "should_force_episode_termination_score": True,
     "should_convert_state_to_array": False,
     "conversion_fn": lambda a,b,c : c,
@@ -18,6 +18,22 @@ config_CP = {
         ("Cart Velocity", "continuous", -1, -1),
         ("Pole Angle", "continuous", -1, -1),
         ("Pole Angular Velocity", "continuous", -1, -1)],
+}
+
+config_MC = {
+    "name": "MountainCar-v0",
+    "can_render": True,
+    "max_score": 0,
+    "should_force_episode_termination_score": False,
+    "should_convert_state_to_array": False,
+    "conversion_fn": lambda a,b,c : c,
+    "episode_termination_score": 0,
+    "n_actions": 3,
+    "actions": ["left", "nop", "right"],
+    "n_attributes": 2,              
+    "attributes": [
+        ("Car Position", "continuous", -1, -1),
+        ("Car Velocity", "continuous", -1, -1)],
 }
 
 config_LL = {
@@ -41,26 +57,10 @@ config_LL = {
         ("Leg 2 is Touching", "binary", [0, 1], -1)],
 }
 
-config_MC = {
-    "name": "MountainCar-v0",
-    "can_render": True,
-    "episode_max_score": 195,
-    "should_force_episode_termination_score": False,
-    "should_convert_state_to_array": False,
-    "conversion_fn": lambda a,b,c : c,
-    "episode_termination_score": 0,
-    "n_actions": 3,
-    "actions": ["left", "nop", "right"],
-    "n_attributes": 2,              
-    "attributes": [
-        ("Car Position", "continuous", -1, -1),
-        ("Car Velocity", "continuous", -1, -1)],
-}
-
 config_BJ = {
     "name": "Blackjack-v0",
     "can_render": False,
-    "episode_max_score": 1,
+    "max_score": 1,
     "should_force_episode_termination_score": False,
     "should_convert_state_to_array": True,
     "conversion_fn": lambda a,b,c : c,
@@ -78,7 +78,7 @@ config_SN = {
     "name": "Snake-8x8-v0",
     "can_render": True,
     "render_delay_ms": 100,
-    "episode_max_score": 16,
+    "max_score": 16,
     "should_force_episode_termination_score": False,
     "should_convert_state_to_array": True,
     "conversion_fn": lambda env, s1, s2 : construct_features(env, decode_state(s1), decode_state(s2)),

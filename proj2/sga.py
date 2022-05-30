@@ -7,7 +7,9 @@ import time
 import matplotlib.pyplot as plt
 
 from evo_tree import EvoTreeNode
+from evo_tree_aa import AAETNode
 from env_configs import get_config
+from utils import printv, console
 import utils
 
 def calc_fitness(tree, episodes=10):
@@ -18,26 +20,43 @@ def tournament_selection(population, q):
     candidates = np.random.choice(population, size=q)
     return max(candidates, key=lambda x : x.fitness)
 
-if __name__ == "__main__":
-    config = get_config("cartpole")
-
-    popsize = 50
-    p_crossover = 0.8
-    p_mutation = 0.05
-    generations = 200
-    sigma = 1
-    alpha = 1
-    q = 10
+def run_genetic_algorithm(config, popsize, p_crossover, p_mutation, 
+    generations, initial_sigma_max, initial_depth, alpha, q, repclass,
+    should_plot=False, should_render=False,
+    verbose=False):
 
     # Initialization
-    population = [EvoTreeNode.generate_random_tree(config, depth=2)
+    population = [repclass.generate_random_tree(config, depth=initial_depth,
+                    sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"]))
                   for _ in range(popsize)]
     best = None
     history = []
-    fig, (ax1, ax2) = plt.subplots(2)
+
+    if should_plot:
+        fig, (ax1, ax2) = plt.subplots(2)
 
     # Main loop
     for generation in range(generations):
+        new_population = []
+        for _ in range(popsize//2):
+            parent_a = tournament_selection(population, q)
+            parent_b = tournament_selection(population, q)
+
+            if np.random.uniform(0, 1) < p_crossover:
+                child_a, child_b = repclass.crossover(parent_a, parent_b)
+            else:
+                child_a, child_b = parent_a, parent_b
+            
+            if np.random.uniform(0, 1) < p_mutation:
+                child_a.mutate()
+
+            if np.random.uniform(0, 1) < p_mutation:
+                child_b.mutate()
+        
+            new_population += [child_a, child_b]
+
+        population = new_population
+
         for individual in population:
             individual.reward = calc_fitness(individual)
             individual.fitness = individual.reward - alpha * individual.get_tree_size()
@@ -45,25 +64,8 @@ if __name__ == "__main__":
             if best is None or individual.fitness > best.fitness:
                 best = copy.deepcopy(individual)
         
-        new_population = []
-        for _ in range(popsize//2):
-            parent_a = tournament_selection(population, q)
-            parent_b = tournament_selection(population, q)
-
-            if np.random.uniform(0, 1) < p_crossover:
-                child_a, child_b = EvoTreeNode.crossover(parent_a, parent_b)
-            else:
-                child_a, child_b = parent_a, parent_b
-            
-            if np.random.uniform(0, 1) < p_mutation:
-                child_a.mutate(sigma)
-
-            if np.random.uniform(0, 1) < p_mutation:
-                child_b.mutate(sigma)
-        
-            new_population += [child_a, child_b]
-
-        population = new_population
+        if best.reward >= config["max_score"]:
+            break
 
         # Printing and plotting
         min_reward = best.reward
@@ -72,8 +74,12 @@ if __name__ == "__main__":
         min_size = best.get_tree_size()
         avg_size = np.mean([i.get_tree_size() for i in population])
         std_size = np.std([i.get_tree_size() for i in population])
-        print(f"[green]Generation #{generation}: (min: {min_reward}, avg: {avg_reward})")
-        print(f"[green]              - best size: {min_size}, avg size: {avg_size})")
+        
+        console.rule(f"[bold red]Generation #{generation}")
+        printv(f"[underline]Reward[/underline]: {{[green]Best: {min_reward}[/green], [yellow]Avg: {avg_reward})[/yellow]}}", verbose)
+        printv(f"[underline]Size  [/underline]: {{[green]Best: {min_size}[/green], [yellow]Avg: {avg_size})[/yellow]}}", verbose)
+        printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose)
+        printv(f"{' ' * 3} - Avg Sigma: {np.mean([i.sigma for i in population], axis=0)}", verbose)
 
         history.append(((min_reward, avg_reward, std_reward),
                         (min_size, avg_size, std_size)))
@@ -85,23 +91,50 @@ if __name__ == "__main__":
         avg_sizes = np.array(avg_sizes)
         std_sizes = np.array(std_sizes)
 
-        ax1.clear()
-        ax1.plot(range(len(history)), min_rewards, color="green", label="Best reward")
-        ax1.plot(range(len(history)), avg_rewards, color="blue", label="Average rewards")
-        ax1.fill_between(range(len(history)), avg_rewards - std_rewards, avg_rewards + std_rewards, color="blue", alpha=0.2)
-        ax2.clear()
-        ax2.plot(range(len(history)), min_sizes, color="red", label="Best size")
-        ax2.plot(range(len(history)), avg_sizes, color="orange", label="Average sizes")
-        ax2.fill_between(range(len(history)), avg_sizes - std_sizes, avg_sizes + std_sizes, color="orange", alpha=0.2)
-        
-        ax2.set_xlabel("Generations")
-        ax1.set_ylabel("Fitness")
-        ax2.set_ylabel("Tree size")
-        ax1.legend()
-        ax2.legend()
-        plt.pause(0.0001)
-    
-    print(f"[yellow]Best individual w/ reward {best.reward}:")
-    print(utils.get_treeviz(config, best))
+        if should_render and generation % 5 == 0:
+            utils.evaluate_fitness(config, best, episodes=1, render=True)
 
-    plt.show()
+        if should_plot:
+            ax1.clear()
+            ax1.plot(range(len(history)), min_rewards, color="green", label="Best reward")
+            ax1.plot(range(len(history)), avg_rewards, color="blue", label="Average rewards")
+            ax1.fill_between(range(len(history)), avg_rewards - std_rewards, avg_rewards + std_rewards, color="blue", alpha=0.2)
+            ax2.clear()
+            ax2.plot(range(len(history)), min_sizes, color="red", label="Best size")
+            ax2.plot(range(len(history)), avg_sizes, color="orange", label="Average sizes")
+            ax2.fill_between(range(len(history)), avg_sizes - std_sizes, avg_sizes + std_sizes, color="orange", alpha=0.2)
+            
+            ax2.set_xlabel("Generations")
+            ax1.set_ylabel("Fitness")
+            ax2.set_ylabel("Tree size")
+            ax1.legend()
+            ax2.legend()
+            plt.pause(0.0001)
+    
+    printv(f"[yellow]Best individual w/ reward {best.reward}:", verbose)
+    printv(best, verbose)
+
+    if should_plot:
+        plt.show()
+    
+    return best, best.reward, best.get_tree_size()
+
+if __name__ == "__main__":
+    history = []
+
+    for _ in range(2):
+        tree, reward, size = run_genetic_algorithm(
+            config=get_config("cartpole"),
+            popsize=50, p_crossover=0.8, p_mutation=0.05,
+            generations=200, initial_sigma_max=1, initial_depth=2, 
+            alpha=1, q=10, repclass=AAETNode, verbose=True,
+            should_plot=True)
+        history.append((tree, reward, size))
+
+    trees, rewards, sizes = zip(*history)
+    print(f"[green][bold]Average reward[/bold]: {np.mean(rewards)}[/green]")
+    print(f"[green][bold]Average size[/bold]: {np.mean(rewards)}[/green]")
+    print(f"-" * 30)
+    print(f"[green][bold]All trees:[/bold][/green]")
+    for tree in trees:
+        print(tree)

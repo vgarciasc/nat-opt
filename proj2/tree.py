@@ -50,6 +50,29 @@ class TreeNode:
                 node_src.parent.left = node_dst
             else:
                 node_src.parent.right = node_dst
+    
+    def __str__(self):
+        stack = [(self, 1)]
+        output = ""
+
+        while len(stack) > 0:
+            node, depth = stack.pop()
+            output += "-" * depth + " "
+
+            if node.is_leaf:
+                output += (self.config['actions'][node.label]).upper()
+            else:
+                output += self.config['attributes'][node.attribute][0]
+                output += " <= "
+                output += '{:.3f}'.format(node.threshold)
+                
+                if node.right:
+                    stack.append((node.right, depth + 1))
+                if node.left:
+                    stack.append((node.left, depth + 1))
+            output += "\n"
+
+        return output
 
 if __name__ == "__main__":
     config = get_config("cartpole")
@@ -61,8 +84,7 @@ if __name__ == "__main__":
             left=TreeNode(config, 1, 2.1, 0, True),
             right=TreeNode(config, 1, 0.2, 1, True)))
 
-
-    utils.printv(utils.get_treeviz(config, tree), verbose=True)
+    utils.printv(tree, verbose=True)
 
     print("[yellow]> Evaluating fitness:[/yellow]")
     print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=10)}")

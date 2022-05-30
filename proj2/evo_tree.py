@@ -1,8 +1,6 @@
-from re import S
 import time
 import numpy as np
 import pdb
-import copy
 from rich import print
 
 import utils
@@ -61,8 +59,11 @@ class EvoTreeNode(TreeNode):
         self.attribute = np.random.randint(self.config["n_attributes"])
     
     def mutate_threshold(self, sigma, verbose=False):
+        if sigma is None:
+            sigma = np.ones(self.config["n_attributes"])
+        
         printv("Mutating threshold...", verbose)
-        self.threshold += np.random.normal(0, 1) * sigma
+        self.threshold += np.random.normal(0, 1) * sigma[self.attribute]
     
     def mutate_label(self, verbose=False):
         printv("Mutating label...", verbose)
@@ -76,7 +77,7 @@ class EvoTreeNode(TreeNode):
             self.left = None
             self.right = None
 
-    def mutate(self, sigma=1):
+    def mutate(self, sigma=None):
         node = self.get_random_node()
 
         if node.is_leaf:
@@ -91,25 +92,14 @@ class EvoTreeNode(TreeNode):
                 node.mutate_is_leaf()
         
     def crossover(parent_a, parent_b):
-        start = time.time()
         parent_a = parent_a.copy()
         parent_b = parent_b.copy()
-        end = time.time()
-        if end - start > 0.5:
-            pdb.set_trace()
-        # print(f"Elapsed time for copying: {end - start} seconds")
 
-        start = time.time()
         node_a = parent_a.get_random_node()
         node_b = parent_b.get_random_node()
-        end = time.time()
-        # print(f"Elapsed time for getting random nodes: {end - start} seconds")
         
-        start = time.time()
         parent_a.replace_node(node_a, node_b)
         parent_b.replace_node(node_b, node_a)
-        end = time.time()
-        # print(f"Elapsed time for replacing nodes: {end - start} seconds")
 
         return parent_a, parent_b
     
@@ -141,12 +131,12 @@ if __name__ == "__main__":
     tree = EvoTreeNode.generate_random_tree(config, depth=2)
 
     print("[yellow]> Generated tree:[/yellow]")
-    printv(utils.get_treeviz(config, tree), verbose=True)
+    printv(tree, verbose=True)
 
     tree.mutate()
 
     print("[yellow]> Mutated tree:[/yellow]")
-    printv(utils.get_treeviz(config, tree), verbose=True)
+    printv(tree, verbose=True)
 
     # print("[yellow]> Evaluating fitness:[/yellow]")
     # print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=10)}")
@@ -158,11 +148,11 @@ if __name__ == "__main__":
     child_a, child_b = EvoTreeNode.crossover(tree_a, tree_b)
 
     print(f"[yellow]Parent A:[/yellow]")
-    printv(utils.get_treeviz(config, tree_a), verbose=True)
+    printv(tree_a, verbose=True)
     print(f"[yellow]Parent B:[/yellow]")
-    printv(utils.get_treeviz(config, tree_b), verbose=True)
+    printv(tree_b, verbose=True)
 
     print(f"[yellow]Child A:[/yellow]")
-    printv(utils.get_treeviz(config, child_a), verbose=True)
+    printv(child_a, verbose=True)
     print(f"[yellow]Child B:[/yellow]")
-    printv(utils.get_treeviz(config, child_b), verbose=True)    
+    printv(child_b, verbose=True)    
