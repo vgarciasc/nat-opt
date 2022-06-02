@@ -1,3 +1,4 @@
+import math
 import numpy as np
 
 # from imitation_learning.snake import decode_state, construct_features
@@ -15,10 +16,10 @@ config_CP = {
     "actions": ["left", "right"],
     "n_attributes": 4,              
     "attributes": [
-        ("Cart Position", "continuous", -1, -1),
-        ("Cart Velocity", "continuous", -1, -1),
-        ("Pole Angle", "continuous", -1, -1),
-        ("Pole Angular Velocity", "continuous", -1, -1)],
+        ("Cart Position", "continuous", [-4.8, 4.8]),
+        ("Cart Velocity", "continuous", [-math.inf, math.inf]),
+        ("Pole Angle", "continuous", [-0.418, 0.418]),
+        ("Pole Angular Velocity", "continuous", [-math.inf, math.inf])],
 }
 
 config_MC = {
@@ -34,8 +35,8 @@ config_MC = {
     "actions": ["left", "nop", "right"],
     "n_attributes": 2,              
     "attributes": [
-        ("Car Position", "continuous", -1, -1),
-        ("Car Velocity", "continuous", -1, -1)],
+        ("Car Position", "continuous", [-math.inf, math.inf]),
+        ("Car Velocity", "continuous", [-math.inf, math.inf])],
 }
 
 config_LL = {
@@ -46,19 +47,18 @@ config_LL = {
     "min_score": -10000,
     "should_force_episode_termination_score": False,
     "should_convert_state_to_array": False,
-    "conversion_fn": lambda a,b,c : c,
     "episode_termination_score": 0,
     "actions": ["nop", "left engine", "main engine", "right engine"],
     "n_attributes": 8,              
     "attributes": [
-        ("X Position", "continuous", -1, -1),
-        ("Y Position", "continuous", -1, -1),
-        ("X Velocity", "continuous", -1, -1),
-        ("Y Velocity", "continuous", -1, -1),
-        ("Angle", "continuous", -1, -1),
-        ("Angular Velocity", "continuous", -1, -1),
-        ("Leg 1 is Touching", "binary", [0, 1], -1),
-        ("Leg 2 is Touching", "binary", [0, 1], -1)],
+        ("X Position", "continuous", [-1.5, 1.5]),
+        ("Y Position", "continuous", [-1.5, 1.5]),
+        ("X Velocity", "continuous", [-5.0, 5.0]),
+        ("Y Velocity", "continuous", [-5.0, 5.0]),
+        ("Angle", "continuous", [-math.pi, math.pi]),
+        ("Angular Velocity", "continuous", [-5.0, 5.0]),
+        ("Leg 1 is Touching", "binary", [0, 1]),
+        ("Leg 2 is Touching", "binary", [0, 1])],
 }
 
 config_BJ = {

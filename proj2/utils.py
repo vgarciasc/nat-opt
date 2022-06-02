@@ -13,8 +13,7 @@ def evaluate_fitness(config, tree, episodes=10, render=False, verbose=False):
     total_rewards = []
 
     for episode in range(episodes):
-        raw_state = env.reset()
-        state = config['conversion_fn'](env, None, raw_state)
+        state = env.reset()
         total_reward = 0
         done = False
         
@@ -22,11 +21,9 @@ def evaluate_fitness(config, tree, episodes=10, render=False, verbose=False):
             action = tree.act(state)
             if render:
                 env.render()
-            raw_next_state, reward, done, _ = env.step(action)
-            next_state = config['conversion_fn'](env, raw_state, raw_next_state)
+            next_state, reward, done, _ = env.step(action)
 
             state = next_state
-            raw_state = raw_next_state
             total_reward += reward
 
         printv(f"Episode #{episode} finished with total reward {total_reward}", verbose)

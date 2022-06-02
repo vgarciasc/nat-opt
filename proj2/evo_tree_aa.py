@@ -11,16 +11,17 @@ from env_configs import get_config
 
 TAU1 = 0.1
 TAU2 = 0.1
+EPS = 0.5
 
 #Auto-adaptative Evolutionary Tree Node
 class AAETNode():
-    def __init__(self, config, sigma, tree, **kwargs):
+    def __init__(self, config, sigma, tree, reward=0, fitness=0, **kwargs):
         self.config = config
         self.sigma = sigma
         self.tree = tree
 
-        self.reward = 0
-        self.fitness = 0
+        self.reward = reward
+        self.fitness = fitness
     
     def act(self, state):
         return self.tree.act(state)
@@ -31,12 +32,17 @@ class AAETNode():
         tree = EvoTreeNode.generate_random_tree(config, depth)
         return AAETNode(config=config, sigma=sigma, tree=tree)
     
-    def mutate(self):
-        N_1 = np.random.normal(0, 1, size=len(self.sigma))
-        N_2 = np.ones(len(self.sigma)) * np.random.normal(0, 1)
-        self.sigma *= np.exp(TAU1 * N_1 + TAU2 * N_2)
+    def mutate(self, use_sigma=True):
+        if use_sigma:
+            N_1 = np.random.normal(0, 1, size=len(self.sigma))
+            N_2 = np.ones(len(self.sigma)) * np.random.normal(0, 1)
+            self.sigma *= np.exp(TAU1 * N_1 + TAU2 * N_2)
+            self.sigma = np.array([max([EPS, s]) for s in self.sigma])
+            sigma = self.sigma
+        else:
+            sigma = None
         
-        self.tree.mutate(self.sigma)
+        self.tree.mutate(sigma)
     
     def crossover(parent_a, parent_b):
         tree_a, tree_b = EvoTreeNode.crossover(parent_a.tree, parent_b.tree)
@@ -48,7 +54,17 @@ class AAETNode():
         child_b = AAETNode(config=tree_b.config, sigma=sigma_b, tree=tree_b)
 
         return child_a, child_b
+
+    def copy(self):
+        return AAETNode(config=self.config,
+            sigma=np.copy(self.sigma),
+            tree=self.tree.copy(),
+            reward=self.reward,
+            fitness=self.fitness)
     
+    def distance(self, other):
+        return self.tree.distance(other.tree)
+
     def get_tree_size(self):
         return self.tree.get_tree_size()
     

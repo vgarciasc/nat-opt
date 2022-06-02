@@ -64,6 +64,15 @@ class EvoTreeNode(TreeNode):
         
         printv("Mutating threshold...", verbose)
         self.threshold += np.random.normal(0, 1) * sigma[self.attribute]
+
+        attr_data = self.config["attributes"][self.attribute]
+        attr_type = attr_data[1]
+        min_val, max_val = attr_data[2]
+
+        if attr_type == "continuous":
+            self.threshold = min([max([self.threshold, min_val]), max_val])
+        elif attr_type == "binary":
+            self.threshold = 0.5
     
     def mutate_label(self, verbose=False):
         printv("Mutating label...", verbose)
@@ -95,6 +104,14 @@ class EvoTreeNode(TreeNode):
         else:
             self.left = EvoTreeNode.generate_random_node(self.config, True)
             self.right = EvoTreeNode.generate_random_node(self.config, True)
+            self.left.parent = self
+            self.right.parent = self
+
+            labels = np.random.choice(
+                range(0, self.config["n_actions"]), 
+                size=2, replace=False)
+            self.left.label = labels[0]
+            self.right.label = labels[1]
 
     def mutate(self, sigma=None):
         node = self.get_random_node()
@@ -109,6 +126,7 @@ class EvoTreeNode(TreeNode):
             operation = np.random.choice(["attribute", "threshold", "is_leaf"])
             if operation == "attribute":
                 node.mutate_attribute()
+                node.threshold = np.random.uniform(-1, 1)
             elif operation == "threshold":
                 node.mutate_threshold(sigma)
             elif operation == "is_leaf":

@@ -73,18 +73,74 @@ class TreeNode:
             output += "\n"
 
         return output
+    
+    def is_equal(node_a, node_b):
+        if not node_a.is_leaf and not node_b.is_leaf:
+            return node_a.threshold == node_b.threshold and \
+                node_a.attribute == node_b.attribute
+
+        if node_a.is_leaf and node_b.is_leaf:
+            return node_a.label == node_b.label
+    
+    def distance(self, tree):
+        node_list = tree.get_node_list()
+        stack = [self]
+        output = 0
+
+        while len(stack) > 0:
+            node = stack.pop()
+
+            if not node.is_leaf:
+                counterparts = [n for n in node_list if TreeNode.is_equal(n, node)]
+                output += 1 if len(counterparts) > 0 else 0
+                
+                if node.right:
+                    stack.append((node.right))
+                if node.left:
+                    stack.append((node.left))
+
+        if output == 0:
+            return 0
+        
+        max_inner_nodes = (max([len(node_list), self.get_tree_size()]) / 2 - 0.5)
+        return output / max_inner_nodes
+    
+    def get_node_list(self):
+        stack = [self]
+        output = []
+
+        while len(stack) > 0:
+            node = stack.pop()
+            output.append(node)
+
+            if not node.is_leaf:
+                if node.right:
+                    stack.append(node.right)
+                if node.left:
+                    stack.append(node.left)
+
+        return output
 
 if __name__ == "__main__":
-    config = get_config("cartpole")
-    tree = TreeNode(config, 3, 0.44, 1, False, 
-        left=TreeNode(config, 2, 0.01, 1, False,
+    # config = get_config("cartpole")
+    # tree = TreeNode(config, 3, 0.44, 1, False, 
+    #     left=TreeNode(config, 2, 0.01, 1, False,
+    #         left=TreeNode(config, 1, 2.1, 0, True),
+    #         right=TreeNode(config, 1, 0.2, 1, True)),
+    #     right=TreeNode(config, 2, -0.41, 0, False, 
+    #         left=TreeNode(config, 1, 2.1, 0, True),
+    #         right=TreeNode(config, 1, 0.2, 1, True)))
+    
+    config = get_config("mountain_car")
+    tree = TreeNode(config, 0, 0.158, 1, False, 
+        left=TreeNode(config, 1, 0.000, 1, False,
             left=TreeNode(config, 1, 2.1, 0, True),
-            right=TreeNode(config, 1, 0.2, 1, True)),
-        right=TreeNode(config, 2, -0.41, 0, False, 
+            right=TreeNode(config, 1, 0.2, 2, True)),
+        right=TreeNode(config, 2, -0.41, 2, True, 
             left=TreeNode(config, 1, 2.1, 0, True),
             right=TreeNode(config, 1, 0.2, 1, True)))
 
     utils.printv(tree, verbose=True)
 
     print("[yellow]> Evaluating fitness:[/yellow]")
-    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=10)}")
+    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=100)}")
