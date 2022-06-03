@@ -46,7 +46,7 @@ def run_evolutionary_programming(config, mu, lamb, generations,
                 console.log(f"Fitness: {individual.reward} - {curr_alpha} * {individual.get_tree_size()}")
                 console.log(individual)
         
-        if best.reward >= config["max_score"]:
+        if best.reward >= config["max_score"] and evaluations_to_success == 0:
             evaluations_to_success = evaluations
 
         population.sort(key=lambda x : x.fitness, reverse=True)
@@ -172,6 +172,7 @@ if __name__ == "__main__":
         #     verbose=True, should_plot=False)
         
         history.append((tree, reward, size, evals2suc))
+        print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
         utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
 
@@ -182,7 +183,7 @@ if __name__ == "__main__":
     
     console.rule(f"[bold red]Hall of Fame")
     print(f"[green][bold]5 best trees:[/bold][/green]")
-    trees.sort(key=lambda x: x.reward, reverse=True)
+    sorted(trees, key=lambda x: x.reward, reverse=True)
     for i, tree in enumerate(trees[:5]):
         print(f"#{i}: [reward {tree.reward}, size {tree.get_tree_size()}]")
         print(tree)

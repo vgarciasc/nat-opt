@@ -1,3 +1,4 @@
+import argparse
 import copy
 import math
 import pdb
@@ -91,7 +92,7 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
         # console.log()
         population = new_population
 
-        if best.reward >= config["max_score"]:
+        if best.reward >= config["max_score"] and evaluations_to_success == 0:
             evaluations_to_success = evaluations
 
         # Printing and plotting
@@ -147,16 +148,44 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
     return best, best.reward, best.get_tree_size(), evaluations_to_success
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Evolutionary Programming')
+    parser.add_argument('-t','--task',help="Which task to run?", required=True)
+    parser.add_argument('-s','--simulations',help="How many simulations?", required=True, type=int)
+    parser.add_argument('--popsize',help="Population size", required=True, type=int)
+    parser.add_argument('--p_crossover',help="Probability of crossover", required=True, type=float)
+    parser.add_argument('--p_mutation',help="Probability of mutation", required=True, type=float)
+    parser.add_argument('--generations',help="Number of generations", required=True, type=int)
+    parser.add_argument('--initial_sigma_max',help="Initial maximum value of sigma", required=True, type=float)
+    parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
+    parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=int)
+    parser.add_argument('--tournament_size',help="Size of tournament", required=True, type=int)
+    parser.add_argument('--elitism',help="Elitism?", required=True, type=float)
+    parser.add_argument('--episodes', help='Number of episodes to run when evaluating model', required=False, default=10, type=int)
+    parser.add_argument('--should_plot', help='Should plot performance?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_render', help='Should render at all?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--render_every', help='Should render every N iterations?', required=False, default=1, type=int)
+    parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_print_individuals', help='Should print individuals?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--verbose', help='Is verbose?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    args = vars(parser.parse_args())
+    
     history = []
 
-    for _ in range(2):
+    for _ in range(args["simulations"]):
         tree, reward, size, evals2suc = run_genetic_algorithm(
-            config=get_config("cartpole"),
-            popsize=50, p_crossover=0.8, p_mutation=0.05,
-            generations=100, initial_sigma_max=1, initial_depth=3, 
-            alpha=5, tournament_size=5, repclass=AAETNode, 
-            elitism=0.0,
-            verbose=True, should_plot=False)
+            config=get_config(args["task"]),
+            popsize=args["popsize"],
+            p_crossover=args["p_crossover"],
+            p_mutation=args["p_mutation"],
+            generations=args["generations"],
+            initial_sigma_max=args["initial_sigma_max"],
+            initial_depth=args["initial_depth"], 
+            alpha=args["alpha"],
+            tournament_size=args["tournament_size"],
+            repclass=AAETNode, 
+            elitism=args["elitism"],
+            verbose=args["verbose"],
+            should_plot=args["should_plot"])
 
         # tree, reward, size, evals2suc = run_genetic_algorithm(
         #     config=get_config("mountain_car"),
@@ -176,16 +205,18 @@ if __name__ == "__main__":
         #     verbose=True, should_plot=False)
         
         history.append((tree, reward, size, evals2suc))
+        print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
         utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
 
     trees, rewards, sizes, evals2suc = zip(*history)
-    evals2suc = [e for e in evals2suc if e > 0]
+    trees = np.array(trees)
     successes = [1 if e > 0 else 0 for e in evals2suc]
+    evals2suc = [e for e in evals2suc if e > 0]
     
     console.rule(f"[bold red]Hall of Fame")
     print(f"[green][bold]5 best trees:[/bold][/green]")
-    trees.sort(key=lambda x: x.reward, reverse=True)
+    sorted(trees, key=lambda x: x.reward, reverse=True)
     for i, tree in enumerate(trees[:5]):
         print(f"#{i}: [reward {tree.reward}, size {tree.get_tree_size()}]")
         print(tree)

@@ -112,18 +112,35 @@ class EvoTreeNode(TreeNode):
                 size=2, replace=False)
             self.left.label = labels[0]
             self.right.label = labels[1]
+    
+    def cut_parent(self):
+        if self.parent is None or self.parent.parent is None:
+            return
+
+        if self.parent.parent.left == self.parent:
+            self.parent.parent.left = self
+        elif self.parent.parent.right == self.parent:
+            self.parent.parent.right = self
 
     def mutate(self, sigma=None):
         node = self.get_random_node()
 
         if node.is_leaf:
             operation = np.random.choice(["label", "is_leaf"])
+            # operation = np.random.choice(["label", "is_leaf", "cut_parent"])
+            
             if operation == "label":
                 node.mutate_label()
             elif operation == "is_leaf":
                 node.mutate_is_leaf()
+            elif operation == "cut_parent":
+                node.cut_parent()
         else:
-            operation = np.random.choice(["attribute", "threshold", "is_leaf"])
+            operation = np.random.choice([
+                "attribute", "threshold", 
+                "is_leaf"])
+                # "is_leaf", "cut_parent"])
+            
             if operation == "attribute":
                 node.mutate_attribute()
                 node.threshold = np.random.uniform(-1, 1)
@@ -131,6 +148,8 @@ class EvoTreeNode(TreeNode):
                 node.mutate_threshold(sigma)
             elif operation == "is_leaf":
                 node.mutate_is_leaf()
+            elif operation == "cut_parent":
+                node.cut_parent()
         
     def crossover(parent_a, parent_b):
         parent_a = parent_a.copy()
