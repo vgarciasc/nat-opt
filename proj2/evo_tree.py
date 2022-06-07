@@ -25,7 +25,7 @@ class EvoTreeNode(TreeNode):
         num_inners = num_nodes // 2
         total_num = (num_leaves if get_leaves else 0) + (num_inners if get_inners else 0)
         
-        if total_num == 1:
+        if total_num <= 1:
             return self
         
         random_idx = np.random.randint(1, total_num)
