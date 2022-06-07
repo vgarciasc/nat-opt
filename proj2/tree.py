@@ -1,5 +1,7 @@
+import gym
 import utils
 import pdb
+import numpy as np
 from rich import print
 
 from env_configs import get_config
@@ -18,11 +20,11 @@ class TreeNode:
         self.left = left
         self.right = right
         self.parent = parent
-    
+
     def __str__(self):
         return f"[attrib: {self.attribute}, threshold: {self.threshold}, " + \
             f"label: {self.label}, is_leaf: {self.is_leaf}]"
-    
+
     def act(self, state):
         if self.is_leaf:
             return self.label
@@ -61,6 +63,7 @@ class TreeNode:
 
             if node.is_leaf:
                 output += (self.config['actions'][node.label]).upper()
+                # output += (self.config['actions'][np.argmax(node.q_values)]).upper() + " " + str(node.q_values)
             else:
                 output += self.config['attributes'][node.attribute][0]
                 output += " <= "
@@ -105,13 +108,14 @@ class TreeNode:
         max_inner_nodes = (max([len(node_list), self.get_tree_size()]) / 2 - 0.5)
         return output / max_inner_nodes
     
-    def get_node_list(self):
+    def get_node_list(self, get_inner=True, get_leaf=True):
         stack = [self]
-        output = []
+        output = [self]
 
         while len(stack) > 0:
             node = stack.pop()
-            output.append(node)
+            if (node.is_leaf and get_leaf) or (not node.is_leaf and get_inner):
+                output.append(node)
 
             if not node.is_leaf:
                 if node.right:

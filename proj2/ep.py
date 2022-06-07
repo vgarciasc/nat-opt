@@ -1,25 +1,35 @@
 import argparse
+import json
 from rich import print
 import numpy as np
 import matplotlib.pyplot as plt
+from evo_tree import EvoTreeNode
 
 from evo_tree_aa import AAETNode
 from env_configs import get_config
-from sga import calc_fitness
+from sga import calc_fitness, tournament_selection
 from utils import printv, console
 import utils
 
-def run_evolutionary_programming(config, mu, lamb, generations, 
-    initial_sigma_max, initial_depth, alpha, repclass, fit_episodes=10,
-    should_adapt_sigma=True,
+def run_evolutionary_programming(config, mu, lamb, generations,
+    tournament_size, initial_sigma_max, initial_depth, alpha,
+    initial_pop, repclass, fit_episodes=10, should_adapt_sigma=True,
     should_plot=False, should_render=False, render_every=None, 
     should_print_individuals=False, verbose=False):
 
     # Initialization
-    population = [repclass.generate_random_tree(
-                    config, depth=initial_depth,
-                    sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"]))
-                  for _ in range(lamb)]
+    population = []
+    if initial_pop != []:
+        for tree in initial_pop: #assuming initial pop of EvoTreeNodes
+            population.append(AAETNode(config=config,
+                sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"]),
+                tree=tree))
+
+    for _ in range(len(population), lamb):
+        population.append(repclass.generate_random_tree(
+            config, depth=initial_depth,
+            sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"])))
+
     best = None
     evaluations = 0
     evaluations_to_success = 0
@@ -50,13 +60,16 @@ def run_evolutionary_programming(config, mu, lamb, generations,
             evaluations_to_success = evaluations
 
         population.sort(key=lambda x : x.fitness, reverse=True)
-        new_population = []
-
         for parent in population[:mu]:
             for _ in range(lamb//mu):
                 child = parent.copy()
                 child.mutate(should_adapt_sigma)
-                new_population.append(child)
+                population.append(child)
+
+        new_population = []
+        for _ in range(lamb):
+            selected = tournament_selection(population, tournament_size)
+            new_population.append(selected)
 
         population = new_population
 
@@ -68,7 +81,8 @@ def run_evolutionary_programming(config, mu, lamb, generations,
         avg_size = np.mean([i.get_tree_size() for i in population])
         std_size = np.std([i.get_tree_size() for i in population])
         
-        console.rule(f"[bold red]Generation #{generation}")
+        if verbose:
+            console.rule(f"[bold red]Generation #{generation}")
         printv(f"[underline]Reward[/underline]: {{[green]Best: {'{:.3f}'.format(min_reward)}[/green], [yellow]Avg: {'{:.3f}'.format(avg_reward)}[/yellow]}}", verbose)
         printv(f"[underline]Size  [/underline]: {{[green]Best: {min_size}[/green], [yellow]Avg: {'{:.3f}'.format(avg_size)}[/yellow]}}", verbose)
         printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose)
@@ -119,26 +133,38 @@ if __name__ == "__main__":
     parser.add_argument('-s','--simulations',help="How many simulations?", required=True, type=int)
     parser.add_argument('--mu',help="Value of mu", required=True, type=int)
     parser.add_argument('--lambda',help="Value of lambda", required=True, type=int)
+    parser.add_argument('--tournament_size',help="Size of tournament", required=True, type=int)
     parser.add_argument('--generations',help="Number of generations", required=True, type=int)
     parser.add_argument('--initial_sigma_max',help="Initial maximum value of sigma", required=True, type=float)
     parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
-    parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=int)
+    parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=float)
     parser.add_argument('--episodes', help='Number of episodes to run when evaluating model', required=False, default=10, type=int)
     parser.add_argument('--should_plot', help='Should plot performance?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_render', help='Should render at all?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--render_every', help='Should render every N iterations?', required=False, default=1, type=int)
     parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_print_individuals', help='Should print individuals?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
     parser.add_argument('--verbose', help='Is verbose?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     args = vars(parser.parse_args())
     
     history = []
+    config = get_config(args["task"])
+
+    initial_pop = []
+    if args['initial_pop'] != '':
+        with open(args['initial_pop']) as f:
+            json_obj = json.load(f)
+        initial_pop = [EvoTreeNode.read_from_string(config, json_str) 
+            for json_str in json_obj]
 
     for _ in range(args['simulations']):
         tree, reward, size, evals2suc = run_evolutionary_programming(
-            config=get_config(args['task']), 
+            config=config, 
             mu=args['mu'], lamb=args['lambda'],
+            initial_pop=initial_pop,
             generations=args['generations'], 
+            tournament_size=args['tournament_size'],
             initial_sigma_max=args['initial_sigma_max'],
             initial_depth=args['initial_depth'], 
             alpha=args['alpha'], repclass=AAETNode,
@@ -174,21 +200,22 @@ if __name__ == "__main__":
         history.append((tree, reward, size, evals2suc))
         print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
-        utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
+        # utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
 
     trees, rewards, sizes, evals2suc = zip(*history)
     trees = np.array(trees)
-    evals2suc = [e for e in evals2suc if e > 0]
     successes = [1 if e > 0 else 0 for e in evals2suc]
+    evals2suc = [e for e in evals2suc if e > 0]
     
-    console.rule(f"[bold red]Hall of Fame")
-    print(f"[green][bold]5 best trees:[/bold][/green]")
-    sorted(trees, key=lambda x: x.reward, reverse=True)
-    for i, tree in enumerate(trees[:5]):
-        print(f"#{i}: [reward {tree.reward}, size {tree.get_tree_size()}]")
-        print(tree)
+    if args["verbose"]:
+        console.rule(f"[bold red]Hall of Fame")
+        print(f"[green][bold]5 best trees:[/bold][/green]")
+        sorted(trees, key=lambda x: x.reward, reverse=True)
+        for i, tree in enumerate(trees[:5]):
+            print(f"#{i}: [reward {tree.reward}, size {tree.get_tree_size()}]")
+            print(tree)
 
-    console.rule(f"[bold red]RESULTS")
+        console.rule(f"[bold red]RESULTS")
     print(f"[green][bold]Mean Best Reward[/bold]: {np.mean(rewards)}[/green]")
     print(f"[green][bold]Mean Best Size[/bold]: {np.mean(sizes)}[/green]")
     print(f"[green][bold]Average Evaluations to Success[/bold]: {np.mean(evals2suc)}[/green]")

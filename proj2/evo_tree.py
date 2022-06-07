@@ -6,25 +6,39 @@ from rich import print
 import utils
 from utils import printv
 from tree import TreeNode
+from qtree import QTreeNode
 from env_configs import get_config
 
 class EvoTreeNode(TreeNode):
     def __init__(self, fitness, reward, **kwargs):
+        super(EvoTreeNode, self).__init__(**kwargs)
+
         self.fitness = fitness
         self.reward = reward
 
-        super(EvoTreeNode, self).__init__(**kwargs)
+    def get_random_node(self, get_inners=True, get_leaves=True):
+        # node_list = self.get_node_list(get_inners, get_leaves)
+        # return np.random.choice(node_list)
+        num_nodes = self.get_tree_size()
+        
+        num_leaves = num_nodes // 2 + 1
+        num_inners = num_nodes // 2
+        total_num = (num_leaves if get_leaves else 0) + (num_inners if get_inners else 0)
+        
+        if total_num == 1:
+            return self
+        
+        random_idx = np.random.randint(1, total_num)
 
-    def get_random_node(self):
-        random_idx = np.random.randint(1, self.get_tree_size())
         stack = [self]
         processed = []
 
         while len(stack) > 0:
             node = stack.pop()
-            processed.append(node)
-            if len(processed) == random_idx + 1:
-                return node
+            if (node.is_leaf and get_leaves) or (not node.is_leaf and get_inners):
+                processed.append(node)
+                if len(processed) == random_idx + 1:
+                    return node
 
             if not node.is_leaf:
                 stack.append(node.right)
@@ -155,8 +169,8 @@ class EvoTreeNode(TreeNode):
         parent_a = parent_a.copy()
         parent_b = parent_b.copy()
 
-        node_a = parent_a.get_random_node()
-        node_b = parent_b.get_random_node()
+        node_a = parent_a.get_random_node(get_leaves=False)
+        node_b = parent_b.get_random_node(get_leaves=False)
         
         parent_a.replace_node(node_a, node_b)
         parent_b.replace_node(node_b, node_a)
@@ -183,6 +197,56 @@ class EvoTreeNode(TreeNode):
             new_right.parent = new_node
 
             return new_node
+    
+    def read_from_string(config, string):
+        actions = [a.lower() for a in config['actions']]
+        attributes = [name.lower() for name, _, _ in config['attributes']]
+
+        lines = string.split("\n")
+
+        parents = [None for _ in lines]
+        child_count = [0 for _ in lines]
+
+        for line in lines[1:]:
+            depth = line.rindex("- ") + 1
+
+            content = line[depth:].strip()
+
+            parent = parents[depth - 1] if depth > 1 else None
+            is_left = (child_count[depth - 1] == 0) if depth > 1 else None
+            
+            is_leaf = "<=" not in content
+
+            if not is_leaf:
+                attribute, threshold = content.split(" <= ")
+                
+                attribute = attributes.index(attribute.lower())
+                threshold = float(threshold)
+
+                node = EvoTreeNode(fitness=-1, reward=-1, config=config,
+                    attribute=attribute, threshold=threshold, label=0,
+                    is_leaf=False, left=None, right=None, parent=parent)
+                
+            if is_leaf:
+                label = actions.index(content.lower())
+
+                node = EvoTreeNode(fitness=-1, reward=-1, config=config,
+                    attribute=0, threshold=0, label=label,
+                    is_leaf=True, left=None, right=None, parent=parent)
+            
+            if parent:
+                if is_left:
+                    parent.left = node
+                else:
+                    parent.right = node
+            else:
+                root = node
+
+            parents[depth] = node
+            child_count[depth] = 0
+            child_count[depth - 1] += 1
+        
+        return root
 
 if __name__ == "__main__":
     config = get_config("cartpole")
@@ -193,26 +257,29 @@ if __name__ == "__main__":
     print("[yellow]> Generated tree:[/yellow]")
     printv(tree, verbose=True)
 
-    tree.mutate()
-
-    print("[yellow]> Mutated tree:[/yellow]")
+    tree.run_episodes(100)
     printv(tree, verbose=True)
 
-    # print("[yellow]> Evaluating fitness:[/yellow]")
-    # print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=10)}")
+    # tree.mutate()
 
-    tree_a = EvoTreeNode.generate_random_tree(config, depth=2)
-    tree_b = EvoTreeNode.generate_random_tree(config, depth=2)
+    # print("[yellow]> Mutated tree:[/yellow]")
+    # printv(tree, verbose=True)
+
+    print("[yellow]> Evaluating fitness:[/yellow]")
+    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=10)}")
+
+    # tree_a = EvoTreeNode.generate_random_tree(config, depth=2)
+    # tree_b = EvoTreeNode.generate_random_tree(config, depth=2)
     
-    print(f"[yellow]Doing crossover...[/yellow]\n")
-    child_a, child_b = EvoTreeNode.crossover(tree_a, tree_b)
+    # print(f"[yellow]Doing crossover...[/yellow]\n")
+    # child_a, child_b = EvoTreeNode.crossover(tree_a, tree_b)
 
-    print(f"[yellow]Parent A:[/yellow]")
-    printv(tree_a, verbose=True)
-    print(f"[yellow]Parent B:[/yellow]")
-    printv(tree_b, verbose=True)
+    # print(f"[yellow]Parent A:[/yellow]")
+    # printv(tree_a, verbose=True)
+    # print(f"[yellow]Parent B:[/yellow]")
+    # printv(tree_b, verbose=True)
 
-    print(f"[yellow]Child A:[/yellow]")
-    printv(child_a, verbose=True)
-    print(f"[yellow]Child B:[/yellow]")
-    printv(child_b, verbose=True)    
+    # print(f"[yellow]Child A:[/yellow]")
+    # printv(child_a, verbose=True)
+    # print(f"[yellow]Child B:[/yellow]")
+    # printv(child_b, verbose=True)    

@@ -1,5 +1,6 @@
 import argparse
 import copy
+import json
 import math
 import pdb
 from rich import print
@@ -23,16 +24,24 @@ def tournament_selection(population, q):
     np.random.shuffle(population)
     return max(population[:q], key=lambda x : x.fitness)
 
-def run_genetic_algorithm(config, popsize, p_crossover, p_mutation, 
+def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation, 
     generations, initial_sigma_max, initial_depth, alpha, tournament_size,
     repclass, fit_episodes=10, elitism=0, should_adapt_sigma=True,
     should_plot=False, should_render=False, render_every=None, verbose=False):
 
     # Initialization
-    population = [repclass.generate_random_tree(
-                    config, depth=initial_depth,
-                    sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"]))
-                  for _ in range(popsize)]
+    population = []
+    if initial_pop != []:
+        for tree in initial_pop: #assuming initial pop of EvoTreeNodes
+            population.append(AAETNode(config=config,
+                sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"]),
+                tree=tree))
+
+    for _ in range(len(population), popsize):
+        population.append(repclass.generate_random_tree(
+            config, depth=initial_depth,
+            sigma=np.random.uniform(0, initial_sigma_max, size=config["n_attributes"])))
+
     best = None
     evaluations = 0
     evaluations_to_success = 0
@@ -59,6 +68,14 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
             if best is None or individual.fitness > best.fitness:
                 # print(f"=>> Best until now!!!!")
                 best = individual.copy()
+
+        # Printing and plotting
+        min_reward = best.reward
+        avg_reward = np.mean([i.reward for i in population])
+        std_reward = np.std([i.reward for i in population])
+        min_size = best.get_tree_size()
+        avg_size = np.mean([i.get_tree_size() for i in population])
+        std_size = np.std([i.get_tree_size() for i in population])
 
         new_population = []
         if elitism > 0:
@@ -94,14 +111,6 @@ def run_genetic_algorithm(config, popsize, p_crossover, p_mutation,
 
         if best.reward >= config["max_score"] and evaluations_to_success == 0:
             evaluations_to_success = evaluations
-
-        # Printing and plotting
-        min_reward = best.reward
-        avg_reward = np.mean([i.reward for i in population])
-        std_reward = np.std([i.reward for i in population])
-        min_size = best.get_tree_size()
-        avg_size = np.mean([i.get_tree_size() for i in population])
-        std_size = np.std([i.get_tree_size() for i in population])
         
         console.rule(f"[bold red]Generation #{generation}")
         printv(f"[underline]Reward[/underline]: {{[green]Best: {'{:.3f}'.format(min_reward)}[/green], [yellow]Avg: {'{:.3f}'.format(avg_reward)}[/yellow]}}", verbose)
@@ -166,15 +175,25 @@ if __name__ == "__main__":
     parser.add_argument('--render_every', help='Should render every N iterations?', required=False, default=1, type=int)
     parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_print_individuals', help='Should print individuals?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
     parser.add_argument('--verbose', help='Is verbose?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     args = vars(parser.parse_args())
     
     history = []
+    config = get_config(args["task"])
 
+    initial_pop = []
+    if args['initial_pop'] != '':
+        with open(args['initial_pop']) as f:
+            json_obj = json.load(f)
+        initial_pop = [EvoTreeNode.read_from_string(config, json_str) 
+            for json_str in json_obj]
+    
     for _ in range(args["simulations"]):
         tree, reward, size, evals2suc = run_genetic_algorithm(
-            config=get_config(args["task"]),
+            config=config,
             popsize=args["popsize"],
+            initial_pop=initial_pop,
             p_crossover=args["p_crossover"],
             p_mutation=args["p_mutation"],
             generations=args["generations"],
@@ -207,7 +226,7 @@ if __name__ == "__main__":
         history.append((tree, reward, size, evals2suc))
         print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
-        utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
+        # utils.evaluate_fitness(tree.config, tree, episodes=10, render=True)
 
     trees, rewards, sizes, evals2suc = zip(*history)
     trees = np.array(trees)
