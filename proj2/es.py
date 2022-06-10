@@ -8,7 +8,7 @@ from evo_tree import EvoTreeNode
 
 from evo_tree_aa import AAETNode
 from env_configs import get_config
-from sga import tournament_selection
+from sga import tournament_selection, initialize_population
 from utils import printv, console
 import utils
 
@@ -18,28 +18,6 @@ def calc_reward(tree, episodes=10, norm_state=False):
         episodes=episodes,
         should_normalize_state=norm_state)
     return mean
-
-def initialize_population(config, initial_depth, lamb, initial_pop, norm_state):
-    population = []
-    if initial_pop != []:
-        for tree in initial_pop: #assuming initial pop of EvoTreeNodes
-            if norm_state:
-                tree.normalize_thresholds()
-            individual = AAETNode(config=config,
-                sigma=np.random.uniform(0, 1, size=config["n_attributes"]),
-                tree=tree)
-            population.append(individual)
-
-    for _ in range(len(population), lamb):
-        population.append(AAETNode.generate_random_tree(
-            config, depth=initial_depth,
-            sigma=np.random.uniform(0, 1, size=config["n_attributes"])))
-    
-    for individual in population:
-        individual.reward = calc_reward(individual, episodes=100, norm_state=norm_state)
-        individual.fitness = individual.reward
-    
-    return population
 
 def run_evolutionary_strategy(config, mu, lamb, generations,
     initial_depth, alpha, initial_pop, fit_episodes=10, 

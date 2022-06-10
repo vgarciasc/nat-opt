@@ -49,6 +49,32 @@ def evaluate_fitness(config, tree, episodes=10, should_normalize_state=False, re
     env.close()
     return np.mean(total_rewards), np.std(total_rewards)
 
+def fill_rewards(config, trees, alpha, episodes=10, should_normalize_state=False):
+    env = gym.make(config["name"])
+    
+    for tree in trees:
+        total_rewards = 0
+
+        for episode in range(episodes):
+            state = env.reset()
+            total_reward = 0
+            done = False
+            
+            while not done:
+                if should_normalize_state:
+                    state = normalize_state(config, state)
+                
+                action = tree.act(state)
+                state, reward, done, _ = env.step(action)
+                total_reward += reward
+
+            total_rewards += total_reward
+    
+        tree.reward = total_rewards / episodes
+        tree.fitness = tree.reward - alpha * tree.get_tree_size()
+    
+    env.close()
+
 def crossover_float_intermediary(parent_a, parent_b):
     assert len(parent_a) == len(parent_b)
 
