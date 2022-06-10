@@ -9,7 +9,7 @@ from evo_tree import EvoTreeNode
 from evo_tree_aa import AAETNode
 from env_configs import get_config
 from sga import tournament_selection, initialize_population
-from utils import printv, console
+from utils import fill_rewards, printv, console
 import utils
 
 def calc_reward(tree, episodes=10, norm_state=False):
@@ -52,12 +52,8 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
                     episodes=fit_episodes, 
                     norm_state=norm_state)
                 child.fitness = child.reward - curr_alpha * child.get_tree_size()
-                evaluations += 1
-
-                if child.fitness > best.fitness:
-                    best = child.copy()
-                
                 child_population.append(child)
+                evaluations += 1                
         
         # Selecting next generation
         if tournament_size == 0:
@@ -85,6 +81,12 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
 
         history.append(((max_reward, avg_reward, std_reward),
                         (min_size, avg_size, std_size)))
+        
+        if individual_max_fitness.fitness > best.fitness:
+            fill_rewards(config, [individual_max_fitness], alpha,
+                episodes=100, should_normalize_state=norm_state)
+            if individual_max_fitness.fitness > best.fitness:
+                best = individual_max_fitness.copy()
         
         # Checking for success
         if max_reward >= 490:
