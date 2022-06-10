@@ -25,7 +25,7 @@ class EvoTreeNode(TreeNode):
         num_inners = num_nodes // 2
         total_num = (num_leaves if get_leaves else 0) + (num_inners if get_inners else 0)
         
-        if total_num == 1:
+        if total_num <= 1:
             return self
         
         random_idx = np.random.randint(1, total_num)
@@ -68,8 +68,15 @@ class EvoTreeNode(TreeNode):
             node.right.parent = node
         return node
     
-    def mutate_attribute(self, verbose=False):
+    def mutate_attribute(self, force_change=False, verbose=False):
         printv("Mutating attribute...", verbose)
+        if force_change:
+            new_attribute = self.attribute
+            while new_attribute == self.attribute:
+                new_attribute = np.random.randint(self.config["n_attributes"])
+            self.attribute = new_attribute
+            return
+        
         self.attribute = np.random.randint(self.config["n_attributes"])
     
     def mutate_threshold(self, sigma, verbose=False):
@@ -136,7 +143,7 @@ class EvoTreeNode(TreeNode):
         elif self.parent.parent.right == self.parent:
             self.parent.parent.right = self
 
-    def mutate(self, sigma=None):
+    def mutate_A(self, sigma=None):
         node = self.get_random_node()
 
         if node.is_leaf:
@@ -164,6 +171,35 @@ class EvoTreeNode(TreeNode):
                 node.mutate_is_leaf()
             elif operation == "cut_parent":
                 node.cut_parent()
+
+    def mutate_B(self, sigma=None):
+        operation = np.random.choice(
+            ["leaf_label", "inner_attribute",
+             "inner_threshold", "is_leaf", 
+             "cut_parent"])
+
+        if operation == "leaf_label":
+            leaf = self.get_random_node(get_inners=False, get_leaves=True)
+            leaf.mutate_label()
+            return 0
+        elif operation == "inner_attribute" or operation == "inner_threshold":
+            inner = self.get_random_node(get_inners=True, get_leaves=False)
+            
+            if operation == "inner_attribute":
+                inner.mutate_attribute(force_change=False)
+                inner.threshold = np.random.uniform(-1, 1)
+                return 1
+            elif operation == "inner_threshold":
+                inner.threshold += np.random.normal(0, 1)
+                return 2
+        elif operation == "is_leaf":
+            node = self.get_random_node()
+            node.mutate_is_leaf()
+            return 3
+        elif operation == "cut_parent":
+            node = self.get_random_node()
+            node.cut_parent()
+            return 4
         
     def crossover(parent_a, parent_b):
         parent_a = parent_a.copy()
@@ -177,6 +213,14 @@ class EvoTreeNode(TreeNode):
 
         return parent_a, parent_b
     
+    def normalize_thresholds(self):
+        (_, _, (xmin, xmax)) = self.config["attributes"][self.attribute]
+        self.threshold = (self.threshold - xmin) / (xmax - xmin) * 2 - 1
+
+        if not self.is_leaf:
+            self.left.normalize_thresholds()
+            self.right.normalize_thresholds()
+
     def copy(self):
         if self.is_leaf:
             return EvoTreeNode(fitness=self.fitness, reward=self.reward,
@@ -197,7 +241,7 @@ class EvoTreeNode(TreeNode):
             new_right.parent = new_node
 
             return new_node
-    
+
     def read_from_string(config, string):
         actions = [a.lower() for a in config['actions']]
         attributes = [name.lower() for name, _, _ in config['attributes']]

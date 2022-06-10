@@ -63,7 +63,7 @@ def run_evolutionary_programming(config, mu, lamb, generations,
         for parent in population[:mu]:
             for _ in range(lamb//mu):
                 child = parent.copy()
-                child.mutate(should_adapt_sigma)
+                child.mutate_A(should_adapt_sigma)
                 population.append(child)
 
         new_population = []

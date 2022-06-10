@@ -98,10 +98,10 @@ def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation,
                 child_a, child_b = parent_a.copy(), parent_b.copy()
 
             if np.random.uniform(0, 1) < p_mutation:
-                child_a.mutate(should_adapt_sigma)
+                child_a.mutate_A(should_adapt_sigma)
 
             if np.random.uniform(0, 1) < p_mutation:
-                child_b.mutate(should_adapt_sigma)
+                child_b.mutate_A(should_adapt_sigma)
         
             new_population += [child_a, child_b]
         

@@ -35,8 +35,8 @@ config_MC = {
     "actions": ["left", "nop", "right"],
     "n_attributes": 2,              
     "attributes": [
-        ("Car Position", "continuous", [-math.inf, math.inf]),
-        ("Car Velocity", "continuous", [-math.inf, math.inf])],
+        ("Car Position", "continuous", [-1.2, 0.6]),
+        ("Car Velocity", "continuous", [-0.07, 0.07])],
 }
 
 config_LL = {
