@@ -1,61 +1,33 @@
 import argparse
-import copy
 import json
-import math
 import pdb
 from rich import print
 import numpy as np
-import time
 import matplotlib.pyplot as plt
-from collections import Counter
-
 from evo_tree import EvoTreeNode
+
 from evo_tree_aa import AAETNode
 from env_configs import get_config
-from tree import TreeNode
-from utils import evaluate_fitness, fill_rewards, printv, console
+from sga import tournament_selection, initialize_population
+from utils import fill_rewards, printv, console
 import utils
-
-def initialize_population(config, initial_depth, popsize, initial_pop, norm_state):
-    population = []
-    if initial_pop != []:
-        for tree in initial_pop: #assuming initial pop of EvoTreeNodes
-            if norm_state:
-                tree.normalize_thresholds()
-            individual = AAETNode(config=config,
-                sigma=np.random.uniform(0, 1, size=config["n_attributes"]),
-                tree=tree)
-            population.append(individual)
-
-    for _ in range(len(population), popsize):
-        population.append(AAETNode.generate_random_tree(
-            config, depth=initial_depth,
-            sigma=np.random.uniform(0, 1, size=config["n_attributes"])))
-    
-    for individual in population:
-        individual.reward, _ = evaluate_fitness(config, individual, episodes=100, should_normalize_state=norm_state)
-        individual.fitness = individual.reward
-    
-    return population
 
 def calc_reward(tree, episodes=10, norm_state=False):
     mean, _ = utils.evaluate_fitness(
-        tree.config, tree,
+        tree.config, tree, 
         episodes=episodes,
         should_normalize_state=norm_state)
     return mean
 
-def tournament_selection(population, q):
-    np.random.shuffle(population)
-    return max(population[:q], key=lambda x : x.fitness)
-
-def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation, 
-    generations, initial_sigma_max, initial_depth, alpha, tournament_size,
-    mutation, norm_state=False, fit_episodes=10, elitism=0, should_adapt_sigma=True,
-    should_plot=False, should_render=False, render_every=None, verbose=False):
+def run_evolutionary_strategy(config, mu, lamb, generations,
+    initial_depth, alpha, initial_pop, fit_episodes=10, 
+    mutation="A", tournament_size=0, 
+    should_plot=False, should_render=False, render_every=None,
+    norm_state=False, should_adapt_sigma=False,
+    verbose=False):
 
     # Initialization
-    population = initialize_population(config, initial_depth, popsize, initial_pop, norm_state)
+    population = initialize_population(config, initial_depth, lamb, initial_pop, norm_state)
     best = population[np.argmax([i.fitness for i in population])]
     evaluations = 0
     evaluations_to_success = 0
@@ -65,52 +37,40 @@ def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation,
         fig, (ax1, ax2) = plt.subplots(2)
 
     # Main loop
-    for generation in range(generations):
+    for generation in range(generations):        
         avg_reward = np.mean([i.reward for i in population])
         curr_alpha = 0 if avg_reward == config["min_score"] else alpha
 
-        # Creating next generation
-        new_population = []
-
-        # - Creating new children
-        for _ in range(popsize//2):
-            parent_a = tournament_selection(population, tournament_size)
-            parent_b = tournament_selection(population, tournament_size)
-
-            if np.random.uniform(0, 1) < p_crossover:
-                child_a, child_b = AAETNode.crossover(parent_a, parent_b)
-            else:
-                child_a, child_b = parent_a.copy(), parent_b.copy()
-
-            if np.random.uniform(0, 1) < p_mutation:
-                child_a.mutate(mutation=mutation, use_sigma=should_adapt_sigma)
-            if np.random.uniform(0, 1) < p_mutation:
-                child_b.mutate(mutation=mutation, use_sigma=should_adapt_sigma)
+        # Creating pool of children
+        population.sort(key=lambda x : x.fitness, reverse=True)
+        child_population = []
+        for parent in population[:mu]:
+            for _ in range(lamb // mu):
+                child = parent.copy()
+                child.mutate(mutation=mutation, use_sigma=should_adapt_sigma)
+                child.reward = calc_reward(child, 
+                    episodes=fit_episodes, 
+                    norm_state=norm_state)
+                child.fitness = child.reward - curr_alpha * child.get_tree_size()
+                child_population.append(child)
+                evaluations += 1                
         
-            new_population += [child_a, child_b]
+        # Selecting next generation
+        if tournament_size == 0:
+            population = child_population
+        else:
+            candidate_population = population + child_population
+            population = []
 
-        # Evaluating population
-        fill_rewards(config, new_population, curr_alpha, episodes=fit_episodes, should_normalize_state=norm_state)
-
-        # - Allowing elitism
-        if elitism > 0:
-            population.sort(key=lambda x : x.fitness)
-            elite = population[:int(popsize * elitism)]
-            new_population += elite
-        
-        population = new_population
+            for _ in range(lamb):
+                selected = tournament_selection(candidate_population, tournament_size)
+                population.append(selected)
 
         # Housekeeping history
         rewards = [i.reward for i in population]
         fitnesses = [i.fitness for i in population]
         tree_sizes = [i.get_tree_size() for i in population]
         individual_max_fitness = population[np.argmax(fitnesses)]
-        
-        if individual_max_fitness.fitness > best.fitness:
-            fill_rewards(config, [individual_max_fitness], alpha,
-                episodes=100, should_normalize_state=norm_state)
-            if individual_max_fitness.fitness > best.fitness:
-                best = individual_max_fitness.copy()
 
         max_reward = individual_max_fitness.reward
         avg_reward = np.mean(rewards)
@@ -122,20 +82,42 @@ def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation,
         history.append(((max_reward, avg_reward, std_reward),
                         (min_size, avg_size, std_size)))
         
-        # Printing and plotting
+        if individual_max_fitness.fitness > best.fitness:
+            fill_rewards(config, [individual_max_fitness], alpha,
+                episodes=100, should_normalize_state=norm_state)
+            if individual_max_fitness.fitness > best.fitness:
+                best = individual_max_fitness.copy()
+        
+        # Checking for success
+        if max_reward >= 490:
+            if evaluations_to_success == 0:
+                reward_precise = calc_reward(individual_max_fitness, episodes=50, norm_state=norm_state)
+                printv(f"Checking for break: (reward: {max_reward}, precise reward: {reward_precise}, tree_size: {individual_max_fitness.get_tree_size()})", verbose)
+                if reward_precise >= 490:
+                    evaluations_to_success = evaluations
+            if individual_max_fitness.get_tree_size() <= 5:
+                reward_precise = calc_reward(individual_max_fitness, episodes=50, norm_state=norm_state)
+                printv(f"Checking for break: (reward: {max_reward}, precise reward: {reward_precise}, tree_size: {individual_max_fitness.get_tree_size()})", verbose)
+                if reward_precise >= 490:
+                    break
+        
+        # Printing
         if verbose:
             console.rule(f"[bold red]Generation #{generation}")
-            printv(f"[underline]Reward[/underline]: {{[green]Best: {'{:.3f}'.format(max_reward)}[/green], [yellow]Avg: {'{:.3f}'.format(avg_reward)}[/yellow]}}", verbose)
+            printv(f"[underline]Reward[/underline]: {{[green]Best: {'{:.3f}'.format(individual_max_fitness.reward)}[/green], [yellow]Avg: {'{:.3f}'.format(avg_reward)}[/yellow]}}", verbose)
             printv(f"[underline]Size  [/underline]: {{[green]Best: {individual_max_fitness.get_tree_size()}[/green], [yellow]Avg: {'{:.3f}'.format(avg_size)}[/yellow]}}", verbose)
-            printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose)
-            printv(f"{' ' * 3} - Avg Sigma: {np.mean([i.sigma for i in population], axis=0)}", verbose)
+            printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose and should_adapt_sigma)
+            printv(f"{' ' * 3} - Avg Sigma: {np.mean([i.sigma for i in population], axis=0)}", verbose and should_adapt_sigma)
 
+        # Rendering
         if should_render and generation % render_every == 0:
-            utils.evaluate_fitness(config, best, episodes=1, render=True, should_normalize_state=norm_state)
+            population.sort(key=lambda x : x.fitness, reverse=True)
+            utils.evaluate_fitness(config, population[0], episodes=1, render=True)
 
+        # Plotting
         if should_plot:
             rewards, sizes = zip(*history)
-            min_rewards, avg_rewards, std_rewards = zip(*rewards)
+            max_rewards, avg_rewards, std_rewards = zip(*rewards)
             avg_rewards = np.array(avg_rewards)
             std_rewards = np.array(std_rewards)
             min_sizes, avg_sizes, std_sizes = zip(*sizes)
@@ -143,7 +125,7 @@ def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation,
             std_sizes = np.array(std_sizes)
 
             ax1.clear()
-            ax1.plot(range(len(history)), min_rewards, color="green", label="Best reward")
+            ax1.plot(range(len(history)), max_rewards, color="green", label="Best reward")
             ax1.plot(range(len(history)), avg_rewards, color="blue", label="Average rewards")
             ax1.fill_between(range(len(history)), avg_rewards - std_rewards, avg_rewards + std_rewards, color="blue", alpha=0.2)
             ax2.clear()
@@ -170,24 +152,21 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Evolutionary Programming')
     parser.add_argument('-t','--task',help="Which task to run?", required=True)
     parser.add_argument('-s','--simulations',help="How many simulations?", required=True, type=int)
-    parser.add_argument('--popsize',help="Population size", required=True, type=int)
-    parser.add_argument('--p_crossover',help="Probability of crossover", required=True, type=float)
-    parser.add_argument('--p_mutation',help="Probability of mutation", required=True, type=float)
+    parser.add_argument('--mu',help="Value of mu", required=True, type=int)
+    parser.add_argument('--lambda',help="Value of lambda", required=True, type=int)
     parser.add_argument('--generations',help="Number of generations", required=True, type=int)
-    parser.add_argument('--initial_sigma_max',help="Initial maximum value of sigma", required=True, type=float)
-    parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
-    parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=int)
+    parser.add_argument('--tournament_size',help="Size of tournament", required=True, type=int)
     parser.add_argument('--mutation_type',help="Type of mutation", required=True, default="A", type=str)
     parser.add_argument('--norm_state',help="Should normalize state?", required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
-    parser.add_argument('--tournament_size',help="Size of tournament", required=True, type=int)
-    parser.add_argument('--elitism',help="Elitism?", required=True, type=float)
+    parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
+    parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
+    parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=float)
+    parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--episodes', help='Number of episodes to run when evaluating model', required=False, default=10, type=int)
     parser.add_argument('--should_plot', help='Should plot performance?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_render', help='Should render at all?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--render_every', help='Should render every N iterations?', required=False, default=1, type=int)
-    parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_print_individuals', help='Should print individuals?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
-    parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
     parser.add_argument('--verbose', help='Is verbose?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     args = vars(parser.parse_args())
     
@@ -200,24 +179,24 @@ if __name__ == "__main__":
             json_obj = json.load(f)
         initial_pop = [EvoTreeNode.read_from_string(config, json_str) 
             for json_str in json_obj]
-    
-    for _ in range(args["simulations"]):
-        tree, reward, size, evals2suc = run_genetic_algorithm(
-            config=config,
-            popsize=args["popsize"],
+
+    for _ in range(args['simulations']):
+        tree, reward, size, evals2suc = run_evolutionary_strategy(
+            config=config, 
+            mu=args['mu'], lamb=args['lambda'],
             initial_pop=initial_pop,
-            p_crossover=args["p_crossover"],
-            p_mutation=args["p_mutation"],
-            generations=args["generations"],
-            initial_sigma_max=args["initial_sigma_max"],
-            initial_depth=args["initial_depth"], 
+            generations=args['generations'], 
+            initial_depth=args['initial_depth'], 
+            tournament_size=args['tournament_size'],
             mutation=args['mutation_type'],
+            alpha=args['alpha'],
+            fit_episodes=args['episodes'],
             norm_state=args['norm_state'],
-            alpha=args["alpha"],
-            tournament_size=args["tournament_size"],
-            elitism=args["elitism"],
-            verbose=args["verbose"],
-            should_plot=args["should_plot"])
+            render_every=args['render_every'],
+            should_adapt_sigma=args['should_adapt_sigma'],
+            should_render=args['should_render'],
+            should_plot=args['should_plot'],
+            verbose=args['verbose'])
         
         reward, _ = utils.evaluate_fitness(
                 tree.config, tree,

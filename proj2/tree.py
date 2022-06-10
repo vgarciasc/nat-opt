@@ -35,10 +35,6 @@ class TreeNode:
             return self.right.act(state)
     
     def get_tree_size(self):
-        # if self.is_leaf:
-        #     return 1
-        # else:
-        #     return 1 + self.left.get_tree_size() + self.right.get_tree_size()
         total = 1
         if self.left != None:
             total += self.left.get_tree_size() 
@@ -126,25 +122,23 @@ class TreeNode:
         return output
 
 if __name__ == "__main__":
-    # config = get_config("cartpole")
-    # tree = TreeNode(config, 3, 0.44, 1, False, 
-    #     left=TreeNode(config, 2, 0.01, 1, False,
-    #         left=TreeNode(config, 1, 2.1, 0, True),
-    #         right=TreeNode(config, 1, 0.2, 1, True)),
-    #     right=TreeNode(config, 2, -0.41, 0, False, 
-    #         left=TreeNode(config, 1, 2.1, 0, True),
-    #         right=TreeNode(config, 1, 0.2, 1, True)))
-    
-    config = get_config("mountain_car")
-    tree = TreeNode(config, 0, 0.158, 1, False, 
-        left=TreeNode(config, 1, 0.000, 1, False,
-            left=TreeNode(config, 1, 2.1, 0, True),
-            right=TreeNode(config, 1, 0.2, 2, True)),
-        right=TreeNode(config, 2, -0.41, 2, True, 
+    config = get_config("cartpole")
+    tree = TreeNode(config, 2, -0.037, 1, False, 
+        left=TreeNode(config, 2, 0.01, 0, True),
+        right=TreeNode(config, 3, -0.689, 0, False, 
             left=TreeNode(config, 1, 2.1, 0, True),
             right=TreeNode(config, 1, 0.2, 1, True)))
+    
+    # config = get_config("mountain_car")
+    # tree = TreeNode(config, 0, 0.158, 1, False, 
+    #     left=TreeNode(config, 1, 0.000, 1, False,
+    #         left=TreeNode(config, 1, 2.1, 0, True),
+    #         right=TreeNode(config, 1, 0.2, 2, True)),
+    #     right=TreeNode(config, 2, -0.41, 2, True, 
+    #         left=TreeNode(config, 1, 2.1, 0, True),
+    #         right=TreeNode(config, 1, 0.2, 1, True)))
 
     utils.printv(tree, verbose=True)
 
     print("[yellow]> Evaluating fitness:[/yellow]")
-    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=100)}")
+    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=100, should_normalize_state=True, render=True)}")

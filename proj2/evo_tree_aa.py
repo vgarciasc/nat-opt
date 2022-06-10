@@ -32,7 +32,13 @@ class AAETNode():
         tree = EvoTreeNode.generate_random_tree(config, depth)
         return AAETNode(config=config, sigma=sigma, tree=tree)
     
-    def mutate(self, use_sigma=True):
+    def mutate(self, mutation="A", use_sigma=True):
+        if mutation == "A":
+            self.mutate_A(use_sigma=use_sigma)
+        elif mutation == "B":
+            self.mutate_B(use_sigma=use_sigma)
+    
+    def mutate_A(self, use_sigma=True):
         if use_sigma:
             N_1 = np.random.normal(0, 1, size=len(self.sigma))
             N_2 = np.ones(len(self.sigma)) * np.random.normal(0, 1)
@@ -42,7 +48,10 @@ class AAETNode():
         else:
             sigma = None
         
-        self.tree.mutate(sigma)
+        self.tree.mutate_A(sigma)
+
+    def mutate_B(self, use_sigma=True):
+        self.tree.mutate_B(None)
     
     def crossover(parent_a, parent_b):
         tree_a, tree_b = EvoTreeNode.crossover(parent_a.tree, parent_b.tree)
