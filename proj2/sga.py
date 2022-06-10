@@ -107,8 +107,9 @@ def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation,
         individual_max_fitness = population[np.argmax(fitnesses)]
         
         if individual_max_fitness.fitness > best.fitness:
-            reward_precise = calc_reward(individual_max_fitness, episodes=50, norm_state=norm_state)
-            if reward_precise > best.reward:
+            fill_rewards(config, [individual_max_fitness], alpha,
+                episodes=100, should_normalize_state=norm_state)
+            if individual_max_fitness.fitness > best.fitness:
                 best = individual_max_fitness.copy()
 
         max_reward = individual_max_fitness.reward
@@ -125,7 +126,7 @@ def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation,
         if verbose:
             console.rule(f"[bold red]Generation #{generation}")
             printv(f"[underline]Reward[/underline]: {{[green]Best: {'{:.3f}'.format(max_reward)}[/green], [yellow]Avg: {'{:.3f}'.format(avg_reward)}[/yellow]}}", verbose)
-            printv(f"[underline]Size  [/underline]: {{[green]Best: {min_size}[/green], [yellow]Avg: {'{:.3f}'.format(avg_size)}[/yellow]}}", verbose)
+            printv(f"[underline]Size  [/underline]: {{[green]Best: {individual_max_fitness.get_tree_size()}[/green], [yellow]Avg: {'{:.3f}'.format(avg_size)}[/yellow]}}", verbose)
             printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose)
             printv(f"{' ' * 3} - Avg Sigma: {np.mean([i.sigma for i in population], axis=0)}", verbose)
 
