@@ -246,7 +246,7 @@ class EvoTreeNode(TreeNode):
         actions = [a.lower() for a in config['actions']]
         attributes = [name.lower() for name, _, _ in config['attributes']]
 
-        lines = string.split("\n")
+        lines = [line.strip() for line in string.split("\n")]
 
         parents = [None for _ in lines]
         child_count = [0 for _ in lines]
@@ -293,24 +293,24 @@ class EvoTreeNode(TreeNode):
         return root
 
 if __name__ == "__main__":
-    config = get_config("cartpole")
+    config = get_config("mountain_car")
     
-    print("[yellow]> Generating tree...[/yellow]")
-    tree = EvoTreeNode.generate_random_tree(config, depth=2)
+    # print("[yellow]> Generating tree...[/yellow]")
+    # tree = EvoTreeNode.generate_random_tree(config, depth=2)
 
-    print("[yellow]> Generated tree:[/yellow]")
-    printv(tree, verbose=True)
+    # print("[yellow]> Generated tree:[/yellow]")
+    # printv(tree, verbose=True)
 
-    tree.run_episodes(100)
-    printv(tree, verbose=True)
+    # tree.run_episodes(100)
+    # printv(tree, verbose=True)
 
     # tree.mutate()
 
     # print("[yellow]> Mutated tree:[/yellow]")
     # printv(tree, verbose=True)
 
-    print("[yellow]> Evaluating fitness:[/yellow]")
-    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=10)}")
+    # print("[yellow]> Evaluating fitness:[/yellow]")
+    # print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=1000)}")
 
     # tree_a = EvoTreeNode.generate_random_tree(config, depth=2)
     # tree_b = EvoTreeNode.generate_random_tree(config, depth=2)
@@ -327,3 +327,27 @@ if __name__ == "__main__":
     # printv(child_a, verbose=True)
     # print(f"[yellow]Child B:[/yellow]")
     # printv(child_b, verbose=True)    
+
+    # ---------------------------------------------
+
+    # Custode and Iacca, 2020: CARTPOLE
+    # string = "\n- Pole Angular Velocity <= 0.074\n-- Pole Angle <= 0.022\n--- LEFT\n--- RIGHT\n-- RIGHT"
+    # norm_state=False
+    # Custode and Iacca, 2020: MOUNTAIN CAR
+    # string = "\n- Car Velocity <= -0.0001\n-- Car Position <= -0.9\n--- RIGHT\n--- LEFT\n-- Car Position <= -0.3\n--- Car Velocity <= 0.035\n---- Car Position <= -0.45\n----- RIGHT\n----- Car Position <= -0.4\n------ RIGHT\n------ LEFT\n---- RIGHT\n--- RIGHT"
+    # norm_state=False
+    
+    # Our DT obtained via DAgger: MOUNTAIN CAR
+    # string = "\n- Car Velocity <= -0.0001\n-- LEFT\n-- Car Velocity <= 0.003\n--- Car Position <= -0.486\n---- RIGHT\n---- LEFT\n--- RIGHT"
+    # norm_state=False
+    # Our DT obtained via EA: MOUNTAIN CAR
+    string = "\n- Car Velocity <= -0.043\n -- LEFT\n -- Car Position <= 0.577\n --- Car Velocity <= 0.043\n ---- Car Position <= -0.210\n ----- RIGHT\n ----- LEFT\n ---- RIGHT\n --- RIGHT"
+    norm_state=True
+
+    tree = EvoTreeNode.read_from_string(config, string=string)
+    print(tree)
+
+    print("[yellow]> Evaluating fitness:[/yellow]")
+    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=1000, should_normalize_state=norm_state)}")
+
+    # utils.evaluate_fitness(config, tree, 10, should_normalize_state=norm_state, render=True, verbose=True)

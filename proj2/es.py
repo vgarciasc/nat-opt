@@ -75,7 +75,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         max_reward = individual_max_fitness.reward
         avg_reward = np.mean(rewards)
         std_reward = np.std(rewards)
-        min_size = np.min(tree_sizes)
+        min_size = individual_max_fitness.get_tree_size()
         avg_size = np.mean(tree_sizes)
         std_size = np.std(tree_sizes)
 
@@ -99,6 +99,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
                 reward_precise = calc_reward(individual_max_fitness, episodes=50, norm_state=norm_state)
                 printv(f"Checking for break: (reward: {max_reward}, precise reward: {reward_precise}, tree_size: {individual_max_fitness.get_tree_size()})", verbose)
                 if reward_precise >= 490:
+                    best = individual_max_fitness.copy()
                     break
         
         # Printing
