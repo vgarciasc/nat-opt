@@ -11,7 +11,7 @@ from env_configs import get_config
 
 TAU1 = 0.1
 TAU2 = 0.1
-EPS = 0.5
+EPS = 0.1
 
 #Auto-adaptative Evolutionary Tree Node
 class AAETNode():
@@ -37,6 +37,8 @@ class AAETNode():
             self.mutate_A(use_sigma=use_sigma)
         elif mutation == "B":
             self.mutate_B(use_sigma=use_sigma)
+        elif mutation == "C":
+            self.mutate_C(use_sigma=use_sigma)
     
     def mutate_A(self, use_sigma=True):
         if use_sigma:
@@ -52,6 +54,18 @@ class AAETNode():
 
     def mutate_B(self, use_sigma=True):
         self.tree.mutate_B(None)
+
+    def mutate_C(self, use_sigma=True):
+        if use_sigma:
+            N_1 = np.random.normal(0, 1, size=len(self.sigma))
+            N_2 = np.ones(len(self.sigma)) * np.random.normal(0, 1)
+            self.sigma *= np.exp(TAU1 * N_1 + TAU2 * N_2)
+            self.sigma = np.array([max([EPS, s]) for s in self.sigma])
+            sigma = self.sigma
+        else:
+            sigma = None
+        
+        self.tree.mutate_C(sigma)
     
     def crossover(parent_a, parent_b):
         tree_a, tree_b = EvoTreeNode.crossover(parent_a.tree, parent_b.tree)

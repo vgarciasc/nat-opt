@@ -46,8 +46,8 @@ def calc_reward(tree, episodes=10, norm_state=False):
     return mean
 
 def tournament_selection(population, q):
-    np.random.shuffle(population)
-    return max(population[:q], key=lambda x : x.fitness)
+    candidates = np.random.choice(population, size=q, replace=False)
+    return max(candidates, key=lambda x : x.fitness)
 
 def run_genetic_algorithm(config, popsize, initial_pop, p_crossover, p_mutation, 
     generations, initial_sigma_max, initial_depth, alpha, tournament_size,

@@ -42,6 +42,15 @@ class TreeNode:
             total += self.right.get_tree_size() 
         return total
     
+    def get_height(self):
+        if self.is_leaf:
+            return 1
+        
+        left_height = self.left.get_height()
+        right_height = self.right.get_height()
+        
+        return max(left_height, right_height) + 1
+    
     def replace_node(self, node_src, node_dst):
         if node_src.parent != None:
             if node_src.parent.left == node_src:

@@ -200,7 +200,35 @@ class EvoTreeNode(TreeNode):
             node = self.get_random_node()
             node.cut_parent()
             return 4
-        
+    
+    def mutate_C(self, sigma=None):
+        node_list = self.get_node_list()
+        probabilities = [1 / node.get_height() for node in node_list]
+        probabilities /= np.sum(probabilities)
+        node = np.random.choice(node_list, p=probabilities)
+
+        if node.is_leaf:
+            operation = np.random.choice(["label", "is_leaf", "cut_parent"])
+            
+            if operation == "label":
+                node.mutate_label()
+            elif operation == "is_leaf":
+                node.mutate_is_leaf()
+            elif operation == "cut_parent":
+                node.cut_parent()
+        else:
+            operation = np.random.choice(["attribute", "threshold", "is_leaf", "cut_parent"])
+            
+            if operation == "attribute":
+                node.mutate_attribute()
+                node.threshold = np.random.uniform(-1, 1)
+            elif operation == "threshold":
+                node.mutate_threshold(sigma)
+            elif operation == "is_leaf":
+                node.mutate_is_leaf()
+            elif operation == "cut_parent":
+                node.cut_parent()
+    
     def crossover(parent_a, parent_b):
         parent_a = parent_a.copy()
         parent_b = parent_b.copy()
