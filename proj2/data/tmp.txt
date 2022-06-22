@@ -1,50 +1,38 @@
-["\n- Car Velocity <= -0.001\n-- LEFT\n-- Car Position <= -0.096\n--- RIGHT\n--- Car Velocity <= 0.027\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- RIGHT\n--- Car Velocity <= 0.027\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= 0.003\n-- Car Velocity <= -0.007\n--- LEFT\n--- Car Position <= -0.502\n---- RIGHT\n---- LEFT\n-- Car Position <= -0.096\n--- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- Car Velocity <= 0.005\n---- Car Position <= -0.486\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= 0.003\n-- Car Velocity <= -0.007\n--- LEFT\n--- Car Position <= -0.502\n---- RIGHT\n---- LEFT\n-- Car Position <= -0.096\n--- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- Car Velocity <= 0.005\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- Car Velocity <= 0.003\n---- Car Position <= -0.489\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- Car Velocity <= 0.005\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- Car Position <= 0.128\n----- RIGHT\n----- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= -0.096\n--- Car Velocity <= 0.005\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- Car Position <= 0.128\n----- RIGHT\n----- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.095\n--- Car Velocity <= 0.005\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.480\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- RIGHT\n--- Car Velocity <= 0.026\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= 0.003\n-- Car Velocity <= -0.007\n--- LEFT\n--- Car Position <= -0.498\n---- RIGHT\n---- LEFT\n-- Car Position <= 0.099\n--- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.003\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.025\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.099\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.026\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.003\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.003\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.475\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.020\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.475\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.475\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.020\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.003\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.003\n---- Car Position <= -0.490\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.019\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.475\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.475\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.019\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.019\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.019\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.019\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.003\n---- Car Position <= -0.481\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.019\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.003\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.003\n---- Car Position <= -0.489\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.018\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.018\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= 0.003\n-- Car Velocity <= -0.007\n--- LEFT\n--- Car Position <= -0.497\n---- RIGHT\n---- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= 0.003\n-- Car Velocity <= -0.007\n--- LEFT\n--- Car Position <= -0.497\n---- RIGHT\n---- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= 0.003\n-- Car Velocity <= -0.007\n--- LEFT\n--- Car Position <= -0.497\n---- RIGHT\n---- LEFT\n-- Car Position <= 0.219\n--- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.006\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.018\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.018\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.018\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.024\n---- RIGHT\n---- NOP",
-"\n- Car Velocity <= -0.000\n-- LEFT\n-- Car Position <= 0.219\n--- Car Velocity <= 0.005\n---- Car Position <= -0.479\n----- RIGHT\n----- LEFT\n---- RIGHT\n--- Car Velocity <= 0.018\n---- RIGHT\n---- NOP"]
+Tree #0 (Reward: 135.373, Size: 15)σ: [0.15581513 0.46092877 0.09253162 0.68025225]
+----------
+- Pole Angle <= -0.41800
+-- Cart Position <= 0.07229
+--- Cart Position <= -0.10175
+---- LEFT
+---- LEFT
+--- Cart Velocity <= 0.45298
+---- RIGHT
+---- LEFT
+-- Pole Angular Velocity <= 0.76844
+--- Pole Angular Velocity <= -0.04538
+---- LEFT
+---- RIGHT
+--- Pole Angle <= 0.70857
+---- RIGHT
+---- LEFT
+Tree #1 (Reward: 308.882, Size: 19)σ: [0.70282429 0.54369513 0.12718044 0.1       ]
+----------
+- Cart Position <= -0.51829
+-- Cart Velocity <= -0.59629
+--- Pole Angle <= -0.10461
+---- Pole Angular Velocity <= 0.39527
+----- LEFT
+----- RIGHT
+---- Pole Angular Velocity <= 0.64892
+----- LEFT
+----- RIGHT
+--- Pole Angle <= -0.70252
+---- RIGHT
+---- LEFT
+-- Cart Velocity <= -0.58413
+--- Pole Angle <= 0.20919
+---- RIGHT
+---- RIGHT
+--- Pole Angle <= 0.03655
+---- LEFT
+---- RIGHT

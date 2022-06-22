@@ -269,7 +269,7 @@ run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=10, N=1000, ϵ=10, coo
 run_and_save_results_sa(df, 1, C=df["k"], T0=0.5, K_max=10, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
 
-df = datasets["dim2"]
+df = datasets["a2"]
 X = load_clustering_dataset(df["path"])
 
 println("-- DA -- \n")
@@ -278,6 +278,8 @@ run_and_save_results_da(df, 10, C=df["k"], T0=1, K_max=100, cooling=:linear, sho
 run_and_save_results_da(df, 10, C=df["k"], T0=0.5, K_max=100, cooling=:linear, should_plot=true)
 run_and_save_results_da(df, 10, C=df["k"], T0=0.1, K_max=100, cooling=:linear, should_plot=true)
 run_and_save_results_da(df, 10, C=df["k"], T0=0.5, K_max=1000, cooling=:linear, should_plot=true)
+run_and_save_results_da(df, 10, C=df["k"], T0=0.05, K_max=100, cooling=:linear, should_plot=true)
+run_and_save_results_da(df, 10, C=df["k"], T0=0.01, K_max=100, cooling=:linear, should_plot=true)
 
 println("-- GLA -- \n")
 run_and_save_results_gla(df, 100, C=df["k"], T0=1, should_plot=true)
@@ -298,8 +300,18 @@ println("-- FSA -- \n")
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=0.1, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=0.01, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.05, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.01, K_max=100, N=100, ϵ=0.001, perturbation=:cauchy, cooling=:linear, no_empty_cells=true, should_plot=true)
 
 println("-- SA-P -- \n")
-run_and_save_results_sa(df, 10, C=df["k"], T0=1, K_max=100, N=100, ϵ=5, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=false)
+run_and_save_results_sa(df, 1, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=1, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=true)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.5, K_max=100, N=100, ϵ=5, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=false)
 run_and_save_results_sa(df, 10, C=df["k"], T0=0.1, K_max=100, N=100, ϵ=5, cooling=:linear, no_empty_cells=true, use_partition_rep=true, should_plot=false)
+
+df = datasets["a1"]
+X = load_clustering_dataset(df["path"])
+
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.01, K_max=100, N=100, ϵ=1, cooling=:linear, use_partition_rep=true, should_plot=false)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.01, K_max=100, N=100, ϵ=5, cooling=:linear, use_partition_rep=true, should_plot=false)
+run_and_save_results_sa(df, 10, C=df["k"], T0=0.01, K_max=100, N=100, ϵ=10, cooling=:linear, use_partition_rep=true, should_plot=false)
+

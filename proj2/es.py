@@ -1,5 +1,6 @@
 import argparse
 import json
+from datetime import datetime
 import pdb
 from rich import print
 import numpy as np
@@ -19,11 +20,34 @@ def calc_reward(tree, episodes=10, norm_state=False):
         should_normalize_state=norm_state)
     return mean
 
+def save_history_to_file(history, filepath):
+    trees, rewards, sizes, evals2suc = zip(*history)
+    successes = [1 if e > 0 else 0 for e in evals2suc]
+    evals2suc = [e for e in evals2suc if e > 0]
+    trees = np.array(trees)
+
+    string = ""
+    string += f"Mean Best Reward: {np.mean(rewards)}\n"
+    string += f"Mean Best Size: {np.mean(sizes)}\n"
+    string += f"Average Evaluations to Success: {np.mean(evals2suc)}\n"
+    string += f"Success Rate: {np.mean(successes)}\n"
+    string += "\n-----\n\n"
+
+    for i, tree in enumerate(trees):
+        string += f"Tree #{i} (Reward: {tree.reward}, Size: {tree.get_tree_size()})\n"
+        string += str(tree)
+        string += "\n"
+    
+    with open(filepath, "w", encoding="utf-8") as text_file:
+        text_file.write(string)
+
 def run_evolutionary_strategy(config, mu, lamb, generations,
     initial_depth, alpha, initial_pop, fit_episodes=10, 
     mutation="A", tournament_size=0, 
-    should_plot=False, should_render=False, render_every=None,
+    should_plot=False, should_save_plot=False, 
+    should_render=False, render_every=None,
     norm_state=False, should_adapt_sigma=False,
+	should_atenuate_alpha=False,
     verbose=False):
 
     # Initialization
@@ -33,13 +57,14 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
     evaluations_to_success = 0
     history = []
 
-    if should_plot:
-        fig, (ax1, ax2) = plt.subplots(2)
+    if should_plot or should_save_plot:
+        fig, (ax1, ax2) = plt.subplots(2, figsize=(12, 12))
 
     # Main loop
     for generation in range(generations):        
         avg_reward = np.mean([i.reward for i in population])
-        curr_alpha = 0 if avg_reward == config["min_score"] else alpha
+        curr_alpha = alpha * (generation / generations) if should_atenuate_alpha else alpha
+        curr_alpha = 0 if avg_reward == config["min_score"] else curr_alpha
 
         # Creating pool of children
         population.sort(key=lambda x : x.fitness, reverse=True)
@@ -116,7 +141,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
             utils.evaluate_fitness(config, population[0], episodes=1, render=True)
 
         # Plotting
-        if should_plot:
+        if (should_plot and generation % render_every == 0) or (should_save_plot and generation == generations - 1):
             rewards, sizes = zip(*history)
             max_rewards, avg_rewards, std_rewards = zip(*rewards)
             avg_rewards = np.array(avg_rewards)
@@ -139,13 +164,18 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
             ax2.set_ylabel("Tree size")
             ax1.legend()
             ax2.legend()
-            plt.pause(0.0001)
+
+            if should_plot:
+                plt.pause(0.0001)
     
     printv(f"[yellow]Best individual w/ reward {best.reward}:", verbose)
     printv(best, verbose)
 
     if should_plot:
         plt.show()
+    
+    if should_save_plot:
+        plt.savefig("data/plots/" + datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + ".png")
     
     return best, best.reward, best.get_tree_size(), evaluations_to_success
 
@@ -161,10 +191,13 @@ if __name__ == "__main__":
     parser.add_argument('--norm_state',help="Should normalize state?", required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
     parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
+    parser.add_argument('--output_path', help="Path to save files", required=False, default=None, type=str)
     parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=float)
     parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_atenuate_alpha', help='Should atenuate alpha?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--episodes', help='Number of episodes to run when evaluating model', required=False, default=10, type=int)
     parser.add_argument('--should_plot', help='Should plot performance?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_save_plot', help='Should save plot performance?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_render', help='Should render at all?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--render_every', help='Should render every N iterations?', required=False, default=1, type=int)
     parser.add_argument('--should_print_individuals', help='Should print individuals?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
@@ -173,6 +206,7 @@ if __name__ == "__main__":
     
     history = []
     config = get_config(args["task"])
+    output_path = args['output_path'] or "data/log_" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S") + ".txt"
 
     initial_pop = []
     if args['initial_pop'] != '':
@@ -195,8 +229,10 @@ if __name__ == "__main__":
             norm_state=args['norm_state'],
             render_every=args['render_every'],
             should_adapt_sigma=args['should_adapt_sigma'],
+            should_atenuate_alpha=args['should_atenuate_alpha'],
             should_render=args['should_render'],
             should_plot=args['should_plot'],
+            should_save_plot=args['should_save_plot'],
             verbose=args['verbose'])
         
         reward, _ = utils.evaluate_fitness(
@@ -206,16 +242,12 @@ if __name__ == "__main__":
         history.append((tree, reward, size, evals2suc))
         print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
-        # utils.evaluate_fitness(tree.config, tree, episodes=10, render=True, norm_state=True)
+        save_history_to_file(history, output_path)
 
     trees, rewards, sizes, evals2suc = zip(*history)
     trees = np.array(trees)
-    for tree in trees:
-        tree.reward, _ = utils.evaluate_fitness(
-            tree.config, tree,
-            episodes=100,
-            should_normalize_state=args['norm_state'])
-        tree.fitness = tree.reward - args["alpha"] * tree.get_tree_size()
+    
+    fill_rewards(config, trees, args['alpha'], episodes=1000, should_normalize_state=args['norm_state'])
     
     successes = [1 if e > 0 else 0 for e in evals2suc]
     evals2suc = [e for e in evals2suc if e > 0]
@@ -233,3 +265,5 @@ if __name__ == "__main__":
     print(f"[green][bold]Mean Best Size[/bold][/green]: {np.mean(sizes)}")
     print(f"[green][bold]Average Evaluations to Success[/bold][/green]: {np.mean(evals2suc)}")
     print(f"[green][bold]Success Rate[/bold][/green]: {np.mean(successes)}")
+
+    save_history_to_file(history, output_path)

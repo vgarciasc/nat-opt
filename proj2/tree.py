@@ -72,7 +72,7 @@ class TreeNode:
             else:
                 output += self.config['attributes'][node.attribute][0]
                 output += " <= "
-                output += '{:.3f}'.format(node.threshold)
+                output += '{:.5f}'.format(node.threshold)
                 
                 if node.right:
                     stack.append((node.right, depth + 1))
