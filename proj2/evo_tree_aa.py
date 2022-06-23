@@ -32,15 +32,15 @@ class AAETNode():
         tree = EvoTreeNode.generate_random_tree(config, depth)
         return AAETNode(config=config, sigma=sigma, tree=tree)
     
-    def mutate(self, mutation="A", use_sigma=True):
+    def mutate(self, mutation="A", use_sigma=True, top_splits=[]):
         if mutation == "A":
-            self.mutate_A(use_sigma=use_sigma)
+            self.mutate_A(use_sigma=use_sigma, top_splits=top_splits)
         elif mutation == "B":
             self.mutate_B(use_sigma=use_sigma)
         elif mutation == "C":
             self.mutate_C(use_sigma=use_sigma)
     
-    def mutate_A(self, use_sigma=True):
+    def mutate_A(self, use_sigma=True, top_splits=[]):
         if use_sigma:
             N_1 = np.random.normal(0, 1, size=len(self.sigma))
             N_2 = np.ones(len(self.sigma)) * np.random.normal(0, 1)
@@ -50,7 +50,7 @@ class AAETNode():
         else:
             sigma = None
         
-        self.tree.mutate_A(sigma)
+        self.tree.mutate_A(sigma, top_splits=top_splits)
 
     def mutate_B(self, use_sigma=True):
         self.tree.mutate_B(None)

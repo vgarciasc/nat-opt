@@ -20,13 +20,13 @@ def calc_reward(tree, episodes=10, norm_state=False):
         should_normalize_state=norm_state)
     return mean
 
-def save_history_to_file(history, filepath):
+def save_history_to_file(history, filepath, prefix=""):
     trees, rewards, sizes, evals2suc = zip(*history)
     successes = [1 if e > 0 else 0 for e in evals2suc]
     evals2suc = [e for e in evals2suc if e > 0]
     trees = np.array(trees)
 
-    string = ""
+    string = prefix
     string += f"Mean Best Reward: {np.mean(rewards)}\n"
     string += f"Mean Best Size: {np.mean(sizes)}\n"
     string += f"Average Evaluations to Success: {np.mean(evals2suc)}\n"
@@ -43,11 +43,12 @@ def save_history_to_file(history, filepath):
 
 def run_evolutionary_strategy(config, mu, lamb, generations,
     initial_depth, alpha, initial_pop, fit_episodes=10, 
-    mutation="A", tournament_size=0, 
+    mutation="A", mutation_qt=1, tournament_size=0, 
     should_plot=False, should_save_plot=False, 
     should_render=False, render_every=None,
     norm_state=False, should_adapt_sigma=False,
 	should_atenuate_alpha=False,
+    should_consider_top_splits=False, top_splits_quantity=20,
     verbose=False):
 
     # Initialization
@@ -56,6 +57,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
     evaluations = 0
     evaluations_to_success = 0
     history = []
+    top_splits = []
 
     if should_plot or should_save_plot:
         fig, (ax1, ax2) = plt.subplots(2, figsize=(12, 12))
@@ -72,7 +74,11 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         for parent in population[:mu]:
             for _ in range(lamb // mu):
                 child = parent.copy()
-                child.mutate(mutation=mutation, use_sigma=should_adapt_sigma)
+                for _ in range(mutation_qt):
+                    child.mutate(
+                        mutation=mutation,
+                        use_sigma=should_adapt_sigma,
+                        top_splits=top_splits)
                 child.reward = calc_reward(child, 
                     episodes=fit_episodes, 
                     norm_state=norm_state)
@@ -111,6 +117,10 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
             fill_rewards(config, [individual_max_fitness], alpha,
                 episodes=100, should_normalize_state=norm_state)
             if individual_max_fitness.fitness > best.fitness:
+                if should_consider_top_splits:
+                    splits = [(node.attribute, node.threshold) for node in individual_max_fitness.tree.get_node_list() if not node.is_leaf]
+                    top_splits += splits
+                    top_splits = top_splits[-top_splits_quantity:]
                 best = individual_max_fitness.copy()
         
         # Checking for success
@@ -191,10 +201,13 @@ if __name__ == "__main__":
     parser.add_argument('--norm_state',help="Should normalize state?", required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
     parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
+    parser.add_argument('--mutation_qt',help="How many mutations to execute?", required=False, default=1, type=int)
     parser.add_argument('--output_path', help="Path to save files", required=False, default=None, type=str)
     parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=float)
     parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_atenuate_alpha', help='Should atenuate alpha?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_consider_top_splits', help='Should consider top splits?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--top_splits_to_consider', help="Number of top splits to consider", required=False, default=10, type=int)
     parser.add_argument('--episodes', help='Number of episodes to run when evaluating model', required=False, default=10, type=int)
     parser.add_argument('--should_plot', help='Should plot performance?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_save_plot', help='Should save plot performance?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
@@ -204,6 +217,9 @@ if __name__ == "__main__":
     parser.add_argument('--verbose', help='Is verbose?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     args = vars(parser.parse_args())
     
+    command_line = str(args)
+    command_line += "\n\npython es.py " + " ".join([f"--{key} {val}" for (key, val) in args.items()]) + "\n\n---\n\n"
+
     history = []
     config = get_config(args["task"])
     output_path = args['output_path'] or "data/log_" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S") + ".txt"
@@ -224,12 +240,15 @@ if __name__ == "__main__":
             initial_depth=args['initial_depth'], 
             tournament_size=args['tournament_size'],
             mutation=args['mutation_type'],
+            mutation_qt=args['mutation_qt'],
             alpha=args['alpha'],
             fit_episodes=args['episodes'],
             norm_state=args['norm_state'],
             render_every=args['render_every'],
             should_adapt_sigma=args['should_adapt_sigma'],
             should_atenuate_alpha=args['should_atenuate_alpha'],
+            should_consider_top_splits=args['should_consider_top_splits'],
+            top_splits_quantity=args['top_splits_to_consider'],
             should_render=args['should_render'],
             should_plot=args['should_plot'],
             should_save_plot=args['should_save_plot'],
@@ -242,7 +261,7 @@ if __name__ == "__main__":
         history.append((tree, reward, size, evals2suc))
         print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
-        save_history_to_file(history, output_path)
+        save_history_to_file(history, output_path, prefix=command_line)
 
     trees, rewards, sizes, evals2suc = zip(*history)
     trees = np.array(trees)
@@ -266,4 +285,4 @@ if __name__ == "__main__":
     print(f"[green][bold]Average Evaluations to Success[/bold][/green]: {np.mean(evals2suc)}")
     print(f"[green][bold]Success Rate[/bold][/green]: {np.mean(successes)}")
 
-    save_history_to_file(history, output_path)
+    save_history_to_file(history, output_path, prefix=command_line)

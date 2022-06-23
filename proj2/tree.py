@@ -115,7 +115,7 @@ class TreeNode:
     
     def get_node_list(self, get_inner=True, get_leaf=True):
         stack = [self]
-        output = [self]
+        output = []
 
         while len(stack) > 0:
             node = stack.pop()

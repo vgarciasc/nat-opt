@@ -10,7 +10,10 @@ norm_state_maxs = None
 def printv(str, verbose=False):
     if verbose:
         console.log(str)
-    
+
+def sigmoid(x):
+    return 1 / (1 + np.exp(-x))
+
 def normalize_state(config, state):
     global norm_state_mins
     global norm_state_maxs
