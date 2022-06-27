@@ -1,5 +1,6 @@
 import argparse
 import copy
+from datetime import datetime
 import json
 import math
 import pdb
@@ -13,7 +14,7 @@ from evo_tree import EvoTreeNode
 from evo_tree_aa import AAETNode
 from env_configs import get_config
 from tree import TreeNode
-from utils import evaluate_fitness, fill_rewards, printv, console
+from utils import evaluate_fitness, fill_rewards, printv, console, save_history_to_file
 import utils
 
 def initialize_population(config, initial_depth, popsize, initial_pop, norm_state):
@@ -188,11 +189,16 @@ if __name__ == "__main__":
     parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_print_individuals', help='Should print individuals?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
+    parser.add_argument('--output_path', help="Path to save files", required=False, default=None, type=str)
     parser.add_argument('--verbose', help='Is verbose?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     args = vars(parser.parse_args())
     
+    command_line = str(args)
+    command_line += "\n\npython sga.py " + " ".join([f"--{key} {val}" for (key, val) in args.items()]) + "\n\n---\n\n"
+
     history = []
     config = get_config(args["task"])
+    output_path = args['output_path'] or "data/log_" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S") + ".txt"
 
     initial_pop = []
     if args['initial_pop'] != '':
@@ -226,7 +232,7 @@ if __name__ == "__main__":
         history.append((tree, reward, size, evals2suc))
         print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
-        # utils.evaluate_fitness(tree.config, tree, episodes=10, render=True, norm_state=True)
+        save_history_to_file(history, output_path, prefix=command_line)
 
     trees, rewards, sizes, evals2suc = zip(*history)
     trees = np.array(trees)
@@ -253,3 +259,5 @@ if __name__ == "__main__":
     print(f"[green][bold]Mean Best Size[/bold][/green]: {np.mean(sizes)}")
     print(f"[green][bold]Average Evaluations to Success[/bold][/green]: {np.mean(evals2suc)}")
     print(f"[green][bold]Success Rate[/bold][/green]: {np.mean(successes)}")
+
+    save_history_to_file(history, output_path, prefix=command_line)

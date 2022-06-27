@@ -10,7 +10,7 @@ from evo_tree import EvoTreeNode
 from evo_tree_aa import AAETNode
 from env_configs import get_config
 from sga import tournament_selection, initialize_population
-from utils import fill_rewards, printv, console
+from utils import fill_rewards, printv, console, save_history_to_file
 import utils
 
 def calc_reward(tree, episodes=10, norm_state=False):
@@ -19,27 +19,6 @@ def calc_reward(tree, episodes=10, norm_state=False):
         episodes=episodes,
         should_normalize_state=norm_state)
     return mean
-
-def save_history_to_file(history, filepath, prefix=""):
-    trees, rewards, sizes, evals2suc = zip(*history)
-    successes = [1 if e > 0 else 0 for e in evals2suc]
-    evals2suc = [e for e in evals2suc if e > 0]
-    trees = np.array(trees)
-
-    string = prefix
-    string += f"Mean Best Reward: {np.mean(rewards)}\n"
-    string += f"Mean Best Size: {np.mean(sizes)}\n"
-    string += f"Average Evaluations to Success: {np.mean(evals2suc)}\n"
-    string += f"Success Rate: {np.mean(successes)}\n"
-    string += "\n-----\n\n"
-
-    for i, tree in enumerate(trees):
-        string += f"Tree #{i} (Reward: {tree.reward}, Size: {tree.get_tree_size()})\n"
-        string += str(tree)
-        string += "\n"
-    
-    with open(filepath, "w", encoding="utf-8") as text_file:
-        text_file.write(string)
 
 def run_evolutionary_strategy(config, mu, lamb, generations,
     initial_depth, alpha, initial_pop, fit_episodes=10, 

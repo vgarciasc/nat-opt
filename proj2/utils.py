@@ -11,6 +11,27 @@ def printv(str, verbose=False):
     if verbose:
         console.log(str)
 
+def save_history_to_file(history, filepath, prefix=""):
+    trees, rewards, sizes, evals2suc = zip(*history)
+    successes = [1 if e > 0 else 0 for e in evals2suc]
+    evals2suc = [e for e in evals2suc if e > 0]
+    trees = np.array(trees)
+
+    string = prefix
+    string += f"Mean Best Reward: {np.mean(rewards)}\n"
+    string += f"Mean Best Size: {np.mean(sizes)}\n"
+    string += f"Average Evaluations to Success: {np.mean(evals2suc)}\n"
+    string += f"Success Rate: {np.mean(successes)}\n"
+    string += "\n-----\n\n"
+
+    for i, tree in enumerate(trees):
+        string += f"Tree #{i} (Reward: {tree.reward}, Size: {tree.get_tree_size()})\n"
+        string += str(tree)
+        string += "\n"
+    
+    with open(filepath, "w", encoding="utf-8") as text_file:
+        text_file.write(string)
+
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
