@@ -9,6 +9,7 @@ from sklearn.datasets import make_blobs
 
 ALPHA = 1
 
+# Evolve the multivariate weights and infer leaf classes based on the training data
 if __name__ == "__main__":
     tree = SoftTree(num_attributes=2, num_classes=2)
     tree.randomize(depth=3)

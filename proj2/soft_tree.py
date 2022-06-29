@@ -64,11 +64,19 @@ class SoftTree:
     def predict(self, state):
         return np.argmax(self.labels[self.get_leaf(state)])
 
+    def act(self, state):
+        return self.predict(state)
+
     def predict_batch(self, X):
         return np.array([self.predict(x) for x in X])
     
     def turn_univariate(self):
-        self.weights = np.array([[(w if i == 0 or i == np.argmax(split) else 0) for i, w in enumerate(split)] for split in self.weights])
+        self.weights = np.array([[(w if i == 0 or i == (np.argmax(np.abs(split[1:])) + 1) else 0) for i, w in enumerate(split)] for split in self.weights])
+        
+        new_labels = np.zeros(self.labels.shape)
+        for leaf in range(self.num_leaves):
+            new_labels[leaf][np.argmax(self.labels[leaf])] = 1
+        self.labels = new_labels
     
     def str_univariate(self):
         stack = [(0, 1)]
@@ -131,8 +139,8 @@ class SoftTreeSigmoid(SoftTree):
                 output.append((node - self.num_nodes, membership))
             else:
                 val = sigmoid(self.weights[node] @ state)
-                stack.append((self.get_left(node), membership * val))
                 stack.append((self.get_right(node), membership * (1 - val)))
+                stack.append((self.get_left(node), membership * val))
         
         max_leaf, max_membership = max(output, key=lambda x:x[1])
         return max_leaf

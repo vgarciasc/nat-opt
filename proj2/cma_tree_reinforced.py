@@ -1,64 +1,101 @@
 import pdb
+import time
+from webbrowser import get
 import cma
 import numpy as np
 
+from env_configs import get_config
+from utils import evaluate_fitness
 from rich import print
 from soft_tree import SoftTree, SoftTreeSigmoid
 from plotter import plot_decision_surface
 from sklearn.datasets import make_blobs
 
-ALPHA = 1
+ALPHA = 10
 
-if __name__ == "__main__":
-    tree = SoftTree(num_attributes=2, num_classes=2)
-    tree.randomize(depth=3)
-    print(tree)
+def get_vector_from_tree(tree):
+    return np.hstack((tree.weights.flatten(), tree.labels.flatten()))
 
-    # X, y = make_blobs(n_samples=1000, centers=2, n_features=2, random_state=1, cluster_std=3)
-    X, y = make_blobs(n_samples=1000, centers=[[-1, 1], [1, 1], [1, -1], [-1, -1]], n_features=2, random_state=1, cluster_std=0.5)
-    y = np.array([y_i % 2 for y_i in y])
-
-    pdb.set_trace()
-
-    get_vector_from_tree = lambda T : np.hstack((T.weights.flatten(), T.labels.flatten()))
-
-    def get_accuracy(vector):
-        weights = vector[:tree.num_nodes * (tree.num_attributes + 1)]
-        labels = vector[tree.num_nodes * (tree.num_attributes + 1):]
-
-        tree.weights = weights.reshape((tree.num_nodes, tree.num_attributes + 1))
-        tree.labels = labels.reshape((tree.num_leaves, tree.num_classes))
-
-        y_pred = tree.predict_batch(X)
-        accuracy = np.mean([(1 if y_pred[i] == y[i] else 0) for i in range(len(X))])
-
-        return accuracy
-
-    def get_accuracy_with_penalty(weights):
-        accuracy = get_accuracy(weights)
-        penalty = np.sum([np.sum(row[1:]) - np.max(row[1:]) for row in np.abs(tree.weights)])
-
-        return 1 - accuracy + ALPHA * penalty
-
-    accuracy = get_accuracy(get_vector_from_tree(tree))
-    print(f"Accuracy: {accuracy}")
-
-    fun = get_accuracy_with_penalty
-    # fun = get_accuracy
-    x0 = np.hstack((tree.weights.flatten(), tree.labels.flatten()))
-    sigma0 = 1
-    x, es = cma.fmin2(fun, x0, sigma0, 
-        options={'maxfevals': 10000,
-                 'bounds': [-1, 1]})
-    
-    weights = x[:tree.num_nodes * (tree.num_attributes + 1)]
-    labels = x[tree.num_nodes * (tree.num_attributes + 1):]
+def get_reward(vector, config, tree, episodes):
+    weights = vector[:tree.num_nodes * (tree.num_attributes + 1)]
+    labels = vector[tree.num_nodes * (tree.num_attributes + 1):]
     tree.weights = weights.reshape((tree.num_nodes, tree.num_attributes + 1))
     tree.labels = labels.reshape((tree.num_leaves, tree.num_classes))
 
-    print(tree)
-    print(f"Accuracy: {get_accuracy(get_vector_from_tree(tree))}")
+    avg_reward, _  = evaluate_fitness(
+        config, tree, episodes,
+        should_normalize_state=True)
 
-    plot_decision_surface(X, y, tree)
+    return avg_reward
 
-    pdb.set_trace()
+def get_reward_with_penalty(weights, config, tree, episodes):
+    avg_reward = get_reward(weights, config, tree, episodes)
+    penalty = np.sum([np.sum(row[1:]) - np.max(row[1:]) for row in np.abs(tree.weights)])
+
+
+    return - avg_reward + ALPHA * penalty
+
+def run_CMAES(config, episodes, tree, options={}):
+    x0 = np.hstack((tree.weights.flatten(), tree.labels.flatten()))
+
+    x, _ = cma.fmin2(
+        objective_function=get_reward_with_penalty, 
+        x0=x0, sigma0=1, 
+        options=options,
+        args=(config, tree, episodes))
+
+    weights = x[:tree.num_nodes * (tree.num_attributes + 1)]
+    tree.weights = weights.reshape((tree.num_nodes, tree.num_attributes + 1))
+
+    if should_evolve_leaves:
+        labels = x[tree.num_nodes * (tree.num_attributes + 1):]
+        tree.labels = labels.reshape((tree.num_leaves, tree.num_classes))
+
+    return tree
+
+if __name__ == "__main__":
+    config = get_config("cartpole")
+    should_evolve_leaves = True
+    episodes = 10
+
+    history = []
+    for iteration in range(10):
+        print(f"Iteration #{iteration}:")
+        
+        tree = SoftTree(
+            num_attributes=config["n_attributes"],
+            num_classes=config["n_actions"])
+        tree.randomize(depth=3)
+
+        start_time = time.time()
+        tree = run_CMAES(
+            config, episodes, tree,
+            options={
+                'maxfevals': 10000,
+                'bounds': [-1, 1]})
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+
+        print(tree)
+
+        multiv_accuracy = get_reward(
+            get_vector_from_tree(tree), 
+            config, tree, episodes)
+        print(f"Accuracy (multivariate): {multiv_accuracy}")
+        
+        pdb.set_trace()
+
+        tree.turn_univariate()
+
+        univ_accuracy = get_reward(
+            get_vector_from_tree(tree), 
+            config, tree, episodes)
+        print(f"Accuracy (univariate): {univ_accuracy}")
+
+        history.append((multiv_accuracy, univ_accuracy, elapsed_time))
+    
+    multiv_accuracies, univ_accuracies, elapsed_times = zip(*history)
+
+    print(f"Average multivariate accuracy: {'{:.3f}'.format(np.mean(multiv_accuracies))} ± {'{:.3f}'.format(np.std(multiv_accuracies))}")
+    print(f"Average univariate accuracy: {'{:.3f}'.format(np.mean(univ_accuracies))} ± {'{:.3f}'.format(np.std(univ_accuracies))}")
+    print(f"Average elapsed time: {'{:.3f}'.format(np.mean(elapsed_times))} ± {'{:.3f}'.format(np.std(elapsed_times))}")
