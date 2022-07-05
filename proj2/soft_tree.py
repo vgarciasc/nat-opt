@@ -70,6 +70,38 @@ class SoftTree:
     def predict_batch(self, X):
         return np.array([self.predict(x) for x in X])
     
+    def get_used_split_mask(self):
+        stack = [(0, 1)]
+        output = []
+
+        while len(stack) > 0:
+            node, depth = stack.pop(0)
+
+            left = self.get_left(node)
+            right = self.get_right(node)
+
+            if not self.is_leaf(node) and self.is_leaf(left) and self.is_leaf(right):
+                if self.labels[left - self.num_nodes] == self.labels[right - self.num_nodes]:
+                    output.append(1)
+                else:
+                    output.append(0)
+            else:
+                bias = self.weights[node][0]
+                attribute = np.argmax(np.abs(self.weights[node][1:])) + 1
+                weight = self.weights[node][attribute]
+
+                output += f"x{attribute} <= {'{:.3f}'.format(-bias / weight)}"
+                
+                if (weight < 0):
+                    stack.append((self.get_left(node), depth + 1))
+                    stack.append((self.get_right(node), depth + 1))
+                else:
+                    stack.append((self.get_right(node), depth + 1))
+                    stack.append((self.get_left(node), depth + 1))
+            output += "\n"
+
+        return output
+    
     def turn_univariate(self):
         self.weights = np.array([[(w if i == 0 or i == (np.argmax(np.abs(split[1:])) + 1) else 0) for i, w in enumerate(split)] for split in self.weights])
         
@@ -78,7 +110,7 @@ class SoftTree:
             new_labels[leaf][np.argmax(self.labels[leaf])] = 1
         self.labels = new_labels
     
-    def str_univariate(self):
+    def str_univariate(self, config=None):
         stack = [(0, 1)]
         output = ""
 
@@ -87,13 +119,17 @@ class SoftTree:
             output += "-" * depth + " "
 
             if self.is_leaf(node):
-                output += f"Class {np.argmax(self.labels[node - self.num_nodes])}"
+                action = np.argmax(self.labels[node - self.num_nodes])
+                output += f"Class {action}" if config is None else config["actions"][action]
             else:
                 bias = self.weights[node][0]
                 attribute = np.argmax(np.abs(self.weights[node][1:])) + 1
                 weight = self.weights[node][attribute]
 
-                output += f"x{attribute} <= {'{:.3f}'.format(-bias / weight)}"
+                if config is None:
+                    output += f"x{attribute} <= {'{:.3f}'.format(-bias / weight)}"
+                else:
+                    output += f"{config['attributes'][attribute- 1][0]} <= {'{:.3f}'.format(-bias / weight)}"
                 
                 if (weight < 0):
                     stack.append((self.get_left(node), depth + 1))
