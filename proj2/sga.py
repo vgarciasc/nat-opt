@@ -14,7 +14,7 @@ from evo_tree import EvoTreeNode
 from evo_tree_aa import AAETNode
 from env_configs import get_config
 from tree import TreeNode
-from utils import evaluate_fitness, fill_rewards, printv, console, save_history_to_file
+from utils import evaluate_fitness, calc_reward, fill_rewards, printv, console, save_history_to_file
 import utils
 
 def initialize_population(config, initial_depth, popsize, initial_pop, norm_state):
@@ -22,6 +22,7 @@ def initialize_population(config, initial_depth, popsize, initial_pop, norm_stat
     if initial_pop != []:
         for tree in initial_pop: #assuming initial pop of EvoTreeNodes
             if norm_state:
+                tree = tree.copy()
                 tree.normalize_thresholds()
             individual = AAETNode(config=config,
                 sigma=np.random.uniform(0, 1, size=config["n_attributes"]),
@@ -38,13 +39,6 @@ def initialize_population(config, initial_depth, popsize, initial_pop, norm_stat
         individual.fitness = individual.reward
     
     return population
-
-def calc_reward(tree, episodes=10, norm_state=False):
-    mean, _ = utils.evaluate_fitness(
-        tree.config, tree,
-        episodes=episodes,
-        should_normalize_state=norm_state)
-    return mean
 
 def tournament_selection(population, q):
     candidates = np.random.choice(population, size=q, replace=False)

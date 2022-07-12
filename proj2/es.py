@@ -10,19 +10,11 @@ from evo_tree import EvoTreeNode
 from evo_tree_aa import AAETNode
 from env_configs import get_config
 from sga import tournament_selection, initialize_population
-from utils import fill_rewards, printv, console, save_history_to_file
-import utils
-
-def calc_reward(tree, episodes=10, norm_state=False):
-    mean, _ = utils.evaluate_fitness(
-        tree.config, tree, 
-        episodes=episodes,
-        should_normalize_state=norm_state)
-    return mean
+from utils import fill_rewards, evaluate_fitness, calc_reward, printv, console, save_history_to_file
 
 def run_evolutionary_strategy(config, mu, lamb, generations,
     initial_depth, alpha, initial_pop, fit_episodes=10, 
-    mutation="A", mutation_qt=1, tournament_size=0, 
+    mutation="A", mutation_qt=1, tournament_size=0, elitism=0.0,
     should_plot=False, should_save_plot=False, 
     should_render=False, render_every=None,
     norm_state=False, should_adapt_sigma=False,
@@ -67,7 +59,13 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         
         # Selecting next generation
         if tournament_size == 0:
-            population = child_population
+            if elitism == 0.0:
+                population = child_population
+            else:
+                elites = population[:int(elitism * lamb)]
+                fill_rewards(config, elites, curr_alpha, 
+                    fit_episodes, should_normalize_state=norm_state)
+                population = child_population + elites
         else:
             candidate_population = population + child_population
             population = []
@@ -91,9 +89,9 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
 
         history.append(((max_reward, avg_reward, std_reward),
                         (min_size, avg_size, std_size)))
-        
+
         if individual_max_fitness.fitness > best.fitness:
-            fill_rewards(config, [individual_max_fitness], alpha,
+            fill_rewards(config, [individual_max_fitness], curr_alpha,
                 episodes=100, should_normalize_state=norm_state)
             if individual_max_fitness.fitness > best.fitness:
                 if should_consider_top_splits:
@@ -127,7 +125,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         # Rendering
         if should_render and generation % render_every == 0:
             population.sort(key=lambda x : x.fitness, reverse=True)
-            utils.evaluate_fitness(config, population[0], episodes=1, render=True)
+            evaluate_fitness(config, population[0], episodes=1, render=True)
 
         # Plotting
         if (should_plot and generation % render_every == 0) or (should_save_plot and generation == generations - 1):
@@ -180,6 +178,7 @@ if __name__ == "__main__":
     parser.add_argument('--norm_state',help="Should normalize state?", required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--initial_depth',help="Randomly initialize the algorithm with trees of what depth?", required=True, type=int)
     parser.add_argument('--initial_pop',help="File with initial population", required=False, default='', type=str)
+    parser.add_argument('--elitism',help="Percentage of elites to maintain", required=False, default=0.0, type=float)
     parser.add_argument('--mutation_qt',help="How many mutations to execute?", required=False, default=1, type=int)
     parser.add_argument('--output_path', help="Path to save files", required=False, default=None, type=str)
     parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=float)
@@ -218,6 +217,7 @@ if __name__ == "__main__":
             generations=args['generations'], 
             initial_depth=args['initial_depth'], 
             tournament_size=args['tournament_size'],
+            elitism=args['elitism'],
             mutation=args['mutation_type'],
             mutation_qt=args['mutation_qt'],
             alpha=args['alpha'],
@@ -233,7 +233,7 @@ if __name__ == "__main__":
             should_save_plot=args['should_save_plot'],
             verbose=args['verbose'])
         
-        reward, _ = utils.evaluate_fitness(
+        reward, _ = evaluate_fitness(
                 tree.config, tree,
                 episodes=100,
                 should_normalize_state=args['norm_state'])

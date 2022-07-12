@@ -374,14 +374,20 @@ if __name__ == "__main__":
     # Our DT obtained via EA: MOUNTAIN CAR
     # string = "\n- Car Velocity <= -0.043\n -- LEFT\n -- Car Position <= 0.577\n --- Car Velocity <= 0.043\n ---- Car Position <= -0.210\n ----- RIGHT\n ----- LEFT\n ---- RIGHT\n --- RIGHT"
     # string = "\n- Car Velocity <= 0.204\n -- Car Velocity <= -0.008\n --- LEFT\n --- Car Position <= -0.156\n ---- RIGHT\n ---- LEFT\n -- RIGHT"
+    string = "\n- Car Velocity <= 0.00000\n-- LEFT\n-- Car Position <= 0.58519\n--- RIGHT\n--- Car Velocity <= 5.51020\n---- RIGHT\n---- NOP"
     config = get_config("mountain_car")
     norm_state=True
     #string = "\n- Car Velocity <= 0.17591\n -- Car Position <= -0.16632\n --- Car Velocity <= -0.01995\n ---- LEFT \n---- Car Position <= 0.60000\n ----- RIGHT\n ----- NOP\n --- LEFT\n -- RIGHT"
-    string = "\n- Car Velocity <= -0.02954\n-- LEFT\n-- Car Velocity <= -0.07000\n--- RIGHT\n--- Car Position <= -0.17060\n---- RIGHT\n---- Car Velocity <= 0.14515\n----- LEFT\n----- RIGHT"
+    # string = "\n- Car Velocity <= 0.28430\n-- Car Position <= -0.15196\n--- Car Velocity <= -0.02208\n---- LEFT\n---- RIGHT\n--- LEFT\n-- RIGHT"
     #config = get_config("lunar_lander")
     # string = "\n- X Velocity <= -0.530\n-- RIGHT ENGINE\n-- Y Velocity <= -0.140\n--- Angle <= -0.010\n---- LEFT ENGINE\n---- MAIN ENGINE\n--- Angular Velocity <= -0.003\n---- Leg 2 is Touching <= 0.500\n----- X Position <= 0.033\n------ NOP\n------ Leg 2 is Touching <= 0.500\n------- LEFT ENGINE\n------- X Position <= 0.417\n-------- X Position <= 0.433\n--------- MAIN ENGINE\n--------- Angular Velocity <= 0.047\n---------- RIGHT ENGINE\n---------- NOP\n-------- Angular Velocity <= 0.886\n--------- LEFT ENGINE\n--------- RIGHT ENGINE\n----- MAIN ENGINE\n---- Leg 2 is Touching <= -0.953\n----- RIGHT ENGINE\n----- LEFT ENGINE"
     #string = "\n- Y Position <= 0.422\n-- Y Velocity <= -0.021\n--- X Position <= 0.461\n---- Angle <= 0.109\n----- Angular Velocity <= 0.493\n------ MAIN ENGINE\n------ LEFT ENGINE\n----- RIGHT ENGINE\n---- Y Velocity <= 0.085\n----- NOP\n----- RIGHT ENGINE\n--- Y Position <= -1.458\n---- Y Position <= -0.554\n----- MAIN ENGINE\n----- NOP\n---- NOP\n-- X Position <= 0.944\n--- Angle <= 0.004\n---- Leg 2 is Touching <= 0.500\n----- Y Velocity <= -0.205\n------ Angle <= 0.176\n------- MAIN ENGINE\n------- X Velocity <= 0.676\n-------- NOP\n-------- Leg 1 is Touching <= 0.076\n--------- NOP\n--------- Leg 2 is Touching <= -0.986\n---------- LEFT ENGINE\n---------- NOP\n------ Angle <= -0.010\n------- Angle <= 1.207\n-------- LEFT ENGINE\n-------- Leg 1 is Touching <= -0.959\n--------- MAIN ENGINE\n--------- NOP\n------- Angular Velocity <= 0.465\n-------- NOP\n-------- Leg 2 is Touching <= 0.500\n--------- RIGHT ENGINE\n--------- NOP\n----- MAIN ENGINE\n---- Angular Velocity <= 0.746\n----- RIGHT ENGINE\n----- Leg 1 is Touching <= -0.901\n------ MAIN ENGINE\n------ X Position <= 1.500\n------- LEFT ENGINE\n------- RIGHT ENGINE\n--- Y Velocity <= 0.255\n---- Y Velocity <= 0.438\n----- RIGHT ENGINE\n----- Y Velocity <= -0.117\n------ RIGHT ENGINE\n------ MAIN ENGINE\n---- Leg 2 is Touching <= 0.500\n----- NOP\n----- Leg 1 is Touching <= -0.799\n------ RIGHT ENGINE\n------ Angular Velocity <= 0.246\n------- LEFT ENGINE\n------- Y Velocity <= -0.580\n-------- X Velocity <= 0.183\n--------- RIGHT ENGINE\n--------- NOP\n-------- RIGHT ENGINE"
     #norm_state=True
+
+    # Our DT obtained via CMA-ES: Cartpole
+    # config = get_config("cartpole")
+    # string = "\n- Pole Angular Velocity <= -0.526\n-- LEFT\n-- Pole Angle <= -0.060\n--- LEFT\n--- RIGHT"
+    # norm_state = True
 
     tree = EvoTreeNode.read_from_string(config, string=string)
     print(tree)
