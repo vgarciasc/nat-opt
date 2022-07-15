@@ -39,6 +39,8 @@ class AAETNode():
             self.mutate_B(use_sigma=use_sigma)
         elif mutation == "C":
             self.mutate_C(use_sigma=use_sigma)
+        elif mutation == "D":
+            self.mutate_D(use_sigma=use_sigma)
     
     def mutate_A(self, use_sigma=True, top_splits=[]):
         if use_sigma:
@@ -66,6 +68,9 @@ class AAETNode():
             sigma = None
         
         self.tree.mutate_C(sigma)
+
+    def mutate_D(self, use_sigma=True):
+        self.tree.mutate_D(None)
     
     def crossover(parent_a, parent_b):
         tree_a, tree_b = EvoTreeNode.crossover(parent_a.tree, parent_b.tree)

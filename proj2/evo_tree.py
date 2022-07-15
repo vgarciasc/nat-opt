@@ -1,6 +1,7 @@
 import time
 import numpy as np
 import pdb
+import matplotlib.pyplot as plt
 from rich import print
 
 import utils
@@ -49,7 +50,7 @@ class EvoTreeNode(TreeNode):
                 stack.append(node.right)
                 stack.append(node.left)
         
-        printv(f"[red]Couldn't find node with id {random_idx}.[/red]", verbose=True)
+        printv(f"[red]Couldn't find node with id {random_idx}.[/red]", verbose=False)
         return None
 
     def generate_random_node(config, is_leaf=None):
@@ -138,8 +139,32 @@ class EvoTreeNode(TreeNode):
                 size=2, replace=False)
             self.left.label = labels[0]
             self.right.label = labels[1]
+
+    def mutate_add_inner_node(self, verbose=False):
+        printv("Adding inner node...", verbose)
+        
+        new_node = EvoTreeNode.generate_random_node(self.config, True)
+        self.right = EvoTreeNode.generate_random_node(self.config, True)
+        self.left.parent = self
+        self.right.parent = self
+
+        labels = np.random.choice(
+            range(0, self.config["n_actions"]), 
+            size=2, replace=False)
+        self.left.label = labels[0]
+        self.right.label = labels[1]
     
-    def cut_parent(self):
+    def replace_child(self, verbose=False):
+        printv("Replacing child...", verbose)
+
+        if np.random.uniform() < 0.5:
+            self.left.cut_parent()
+        else:
+            self.right.cut_parent()
+
+    def cut_parent(self, verbose=False):
+        printv("Cutting parent...", verbose)
+
         if self.parent is None or self.parent.parent is None:
             return
 
@@ -147,6 +172,8 @@ class EvoTreeNode(TreeNode):
             self.parent.parent.left = self
         elif self.parent.parent.right == self.parent:
             self.parent.parent.right = self
+        
+        self.parent = self.parent.parent
 
     def mutate_A(self, sigma=None, top_splits=[]):
         node = self.get_random_node()
@@ -231,6 +258,48 @@ class EvoTreeNode(TreeNode):
                 node.mutate_is_leaf()
             elif operation == "cut_parent":
                 node.cut_parent()
+
+    def mutate_D(self, sigma=None, top_splits=[], verbose=False):
+        operation = np.random.choice(["add", "remove", "modify"], p=[0.45, 0.1, 0.45])
+
+        if operation == "add":
+            node = self.get_random_node()
+
+            if node.is_leaf:
+                node.mutate_is_leaf()
+            else:
+                node.mutate_add_inner_node()
+
+        elif operation == "remove":
+            node_list = self.get_node_list()
+            probabilities = [1 / node.get_height() for node in node_list]
+            probabilities /= np.sum(probabilities)
+            node = np.random.choice(node_list, p=probabilities)
+
+            if node.is_leaf:
+                node.cut_parent()
+            else:
+                node.replace_child()
+
+        elif operation == "modify":
+            node = self.get_random_node()
+            
+            if node.is_leaf:
+                node.mutate_label()
+            else:
+                operation = np.random.choice(["attribute", "threshold"])
+                
+                if operation == "attribute":
+                    if top_splits != [] and np.random.uniform(0, 1) <= 0.5:
+                        attribute, threshold = top_splits[np.random.randint(0, len(top_splits))]
+                        printv(f"Reusing top split ({attribute}, {threshold}).", verbose)
+                        node.attribute = attribute
+                        node.threshold = threshold
+                    else:
+                        node.mutate_attribute()
+                        node.threshold = np.random.uniform(-1, 1)
+                elif operation == "threshold":
+                    node.mutate_threshold(sigma)
     
     def crossover(parent_a, parent_b):
         parent_a = parent_a.copy()
@@ -330,15 +399,15 @@ if __name__ == "__main__":
     # tree = EvoTreeNode.generate_random_tree(config, depth=2)
 
     # print("[yellow]> Generated tree:[/yellow]")
-    # printv(tree, verbose=True)
+    # printv(tree, verbose=False)
 
     # tree.run_episodes(100)
-    # printv(tree, verbose=True)
+    # printv(tree, verbose=False)
 
     # tree.mutate()
 
     # print("[yellow]> Mutated tree:[/yellow]")
-    # printv(tree, verbose=True)
+    # printv(tree, verbose=False)
 
     # print("[yellow]> Evaluating fitness:[/yellow]")
     # print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=1000)}")
@@ -350,14 +419,14 @@ if __name__ == "__main__":
     # child_a, child_b = EvoTreeNode.crossover(tree_a, tree_b)
 
     # print(f"[yellow]Parent A:[/yellow]")
-    # printv(tree_a, verbose=True)
+    # printv(tree_a, verbose=False)
     # print(f"[yellow]Parent B:[/yellow]")
-    # printv(tree_b, verbose=True)
+    # printv(tree_b, verbose=False)
 
     # print(f"[yellow]Child A:[/yellow]")
-    # printv(child_a, verbose=True)
+    # printv(child_a, verbose=False)
     # print(f"[yellow]Child B:[/yellow]")
-    # printv(child_b, verbose=True)    
+    # printv(child_b, verbose=False)    
 
     # ---------------------------------------------
 
@@ -374,15 +443,15 @@ if __name__ == "__main__":
     # Our DT obtained via EA: MOUNTAIN CAR
     # string = "\n- Car Velocity <= -0.043\n -- LEFT\n -- Car Position <= 0.577\n --- Car Velocity <= 0.043\n ---- Car Position <= -0.210\n ----- RIGHT\n ----- LEFT\n ---- RIGHT\n --- RIGHT"
     # string = "\n- Car Velocity <= 0.204\n -- Car Velocity <= -0.008\n --- LEFT\n --- Car Position <= -0.156\n ---- RIGHT\n ---- LEFT\n -- RIGHT"
-    string = "\n- Car Velocity <= 0.00000\n-- LEFT\n-- Car Position <= 0.58519\n--- RIGHT\n--- Car Velocity <= 5.51020\n---- RIGHT\n---- NOP"
+    string = "\n- Car Position <= -0.16667\n-- Car Velocity <= -0.01089\n--- LEFT\n--- RIGHT\n-- Car Velocity <= 0.20175\n--- LEFT\n--- RIGHT"
     config = get_config("mountain_car")
     norm_state=True
     #string = "\n- Car Velocity <= 0.17591\n -- Car Position <= -0.16632\n --- Car Velocity <= -0.01995\n ---- LEFT \n---- Car Position <= 0.60000\n ----- RIGHT\n ----- NOP\n --- LEFT\n -- RIGHT"
     # string = "\n- Car Velocity <= 0.28430\n-- Car Position <= -0.15196\n--- Car Velocity <= -0.02208\n---- LEFT\n---- RIGHT\n--- LEFT\n-- RIGHT"
-    #config = get_config("lunar_lander")
+    # config = get_config("lunar_lander")
     # string = "\n- X Velocity <= -0.530\n-- RIGHT ENGINE\n-- Y Velocity <= -0.140\n--- Angle <= -0.010\n---- LEFT ENGINE\n---- MAIN ENGINE\n--- Angular Velocity <= -0.003\n---- Leg 2 is Touching <= 0.500\n----- X Position <= 0.033\n------ NOP\n------ Leg 2 is Touching <= 0.500\n------- LEFT ENGINE\n------- X Position <= 0.417\n-------- X Position <= 0.433\n--------- MAIN ENGINE\n--------- Angular Velocity <= 0.047\n---------- RIGHT ENGINE\n---------- NOP\n-------- Angular Velocity <= 0.886\n--------- LEFT ENGINE\n--------- RIGHT ENGINE\n----- MAIN ENGINE\n---- Leg 2 is Touching <= -0.953\n----- RIGHT ENGINE\n----- LEFT ENGINE"
-    #string = "\n- Y Position <= 0.422\n-- Y Velocity <= -0.021\n--- X Position <= 0.461\n---- Angle <= 0.109\n----- Angular Velocity <= 0.493\n------ MAIN ENGINE\n------ LEFT ENGINE\n----- RIGHT ENGINE\n---- Y Velocity <= 0.085\n----- NOP\n----- RIGHT ENGINE\n--- Y Position <= -1.458\n---- Y Position <= -0.554\n----- MAIN ENGINE\n----- NOP\n---- NOP\n-- X Position <= 0.944\n--- Angle <= 0.004\n---- Leg 2 is Touching <= 0.500\n----- Y Velocity <= -0.205\n------ Angle <= 0.176\n------- MAIN ENGINE\n------- X Velocity <= 0.676\n-------- NOP\n-------- Leg 1 is Touching <= 0.076\n--------- NOP\n--------- Leg 2 is Touching <= -0.986\n---------- LEFT ENGINE\n---------- NOP\n------ Angle <= -0.010\n------- Angle <= 1.207\n-------- LEFT ENGINE\n-------- Leg 1 is Touching <= -0.959\n--------- MAIN ENGINE\n--------- NOP\n------- Angular Velocity <= 0.465\n-------- NOP\n-------- Leg 2 is Touching <= 0.500\n--------- RIGHT ENGINE\n--------- NOP\n----- MAIN ENGINE\n---- Angular Velocity <= 0.746\n----- RIGHT ENGINE\n----- Leg 1 is Touching <= -0.901\n------ MAIN ENGINE\n------ X Position <= 1.500\n------- LEFT ENGINE\n------- RIGHT ENGINE\n--- Y Velocity <= 0.255\n---- Y Velocity <= 0.438\n----- RIGHT ENGINE\n----- Y Velocity <= -0.117\n------ RIGHT ENGINE\n------ MAIN ENGINE\n---- Leg 2 is Touching <= 0.500\n----- NOP\n----- Leg 1 is Touching <= -0.799\n------ RIGHT ENGINE\n------ Angular Velocity <= 0.246\n------- LEFT ENGINE\n------- Y Velocity <= -0.580\n-------- X Velocity <= 0.183\n--------- RIGHT ENGINE\n--------- NOP\n-------- RIGHT ENGINE"
-    #norm_state=True
+    # string = "\n- Y Velocity <= 0.37860\n-- Y Position <= 0.15\n--- NOP\n--- Y Position <= 0.55027\n---- MAIN ENGINE\n---- X Position <= 0.52334\n----- Angle <= 0.00372\n------ LEFT ENGINE\n------ X Position <= 0.69662\n------- RIGHT ENGINE\n------- Y Position <= 0.81893\n-------- MAIN ENGINE\n-------- LEFT ENGINE\n----- RIGHT ENGINE\n-- LEFT ENGINE"
+    # norm_state=True
 
     # Our DT obtained via CMA-ES: Cartpole
     # config = get_config("cartpole")
@@ -391,6 +460,19 @@ if __name__ == "__main__":
 
     tree = EvoTreeNode.read_from_string(config, string=string)
     print(tree)
+
+    # history = []
+    # for _ in range(10000):
+    #     tree.mutate_D()
+    #     size = tree.get_tree_size()
+    #     history.append(size)
+    
+    # print(f"Mean: {np.mean(history)} +- {np.std(history)}")
+
+    # plt.plot(range(len(history)), history, label="Tree size", color='red')
+    # plt.legend()
+    # plt.show()
+    # pdb.set_trace()
 
     print("[yellow]> Evaluating fitness:[/yellow]")
     print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=1000, should_normalize_state=norm_state)}")

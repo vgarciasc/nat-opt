@@ -52,7 +52,8 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
                         top_splits=top_splits)
                 child.reward = calc_reward(child, 
                     episodes=fit_episodes, 
-                    norm_state=norm_state)
+                    norm_state=norm_state, 
+                    penalize_std=True)
                 child.fitness = child.reward - curr_alpha * child.get_tree_size()
                 child_population.append(child)
                 evaluations += 1                
@@ -162,7 +163,9 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         plt.show()
     
     if should_save_plot:
-        plt.savefig("data/plots/" + datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + ".png")
+        figure_file = "data/plots/" + config['task'] + "_" + datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + ".png"
+        print(f"Saving figure to '{figure_file}'.")
+        plt.savefig(figure_file)
     
     return best, best.reward, best.get_tree_size(), evaluations_to_success
 
@@ -202,6 +205,9 @@ if __name__ == "__main__":
     config = get_config(args["task"])
     output_path = args['output_path'] or "data/log_" + datetime.now().strftime("%Y_%m_%d-%I_%M_%S") + ".txt"
 
+    print(f"{command_line}")
+    print(f"output_path: '{output_path}'")
+
     initial_pop = []
     if args['initial_pop'] != '':
         with open(args['initial_pop']) as f:
@@ -240,12 +246,13 @@ if __name__ == "__main__":
         history.append((tree, reward, size, evals2suc))
         print(f"Simulations run until now: {len(history)} / {args['simulations']}")
         print(history)
+        print(f"output_path: '{output_path}'")
         save_history_to_file(history, output_path, prefix=command_line)
 
     trees, rewards, sizes, evals2suc = zip(*history)
     trees = np.array(trees)
     
-    fill_rewards(config, trees, args['alpha'], episodes=1000, should_normalize_state=args['norm_state'])
+    fill_rewards(config, trees, args['alpha'], episodes=1000, should_normalize_state=args['norm_state'], penalize_std=False)
     
     successes = [1 if e > 0 else 0 for e in evals2suc]
     evals2suc = [e for e in evals2suc if e > 0]

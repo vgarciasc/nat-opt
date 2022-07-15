@@ -73,14 +73,14 @@ def evaluate_fitness(config, tree, episodes=10, should_normalize_state=False, re
     env.close()
     return np.mean(total_rewards), np.std(total_rewards)
 
-def calc_reward(tree, episodes=10, norm_state=False):
+def calc_reward(tree, episodes=10, norm_state=False, penalize_std=False):
     mean, std = evaluate_fitness(
         tree.config, tree,
         episodes=episodes,
         should_normalize_state=norm_state)
-    return mean - std
+    return mean - std if penalize_std else mean
 
-def fill_rewards(config, trees, alpha, episodes=10, should_normalize_state=False):
+def fill_rewards(config, trees, alpha, episodes=10, should_normalize_state=False, penalize_std=False):
     env = gym.make(config["name"])
     
     for tree in trees:
@@ -104,7 +104,7 @@ def fill_rewards(config, trees, alpha, episodes=10, should_normalize_state=False
             rewards.append(total_reward)
 
         # tree.reward = total_rewards / episodes
-        tree.reward = np.mean(rewards) - np.std(rewards)
+        tree.reward = np.mean(rewards) - np.std(rewards) if penalize_std else np.mean(rewards)
         tree.fitness = tree.reward - alpha * tree.get_tree_size()
     
     env.close()
