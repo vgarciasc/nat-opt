@@ -17,7 +17,7 @@ from tree import TreeNode
 from utils import evaluate_fitness, calc_reward, fill_rewards, printv, console, save_history_to_file
 import utils
 
-def initialize_population(config, initial_depth, popsize, initial_pop, norm_state):
+def initialize_population(config, initial_depth, popsize, initial_pop, alpha, norm_state, should_penalize_std):
     population = []
     if initial_pop != []:
         for tree in initial_pop: #assuming initial pop of EvoTreeNodes
@@ -34,9 +34,9 @@ def initialize_population(config, initial_depth, popsize, initial_pop, norm_stat
             config, depth=initial_depth,
             sigma=np.random.uniform(0, 1, size=config["n_attributes"])))
     
-    for individual in population:
-        individual.reward, _ = evaluate_fitness(config, individual, episodes=100, should_normalize_state=norm_state)
-        individual.fitness = individual.reward
+    fill_rewards(config, population, alpha=alpha, 
+        episodes=100, should_normalize_state=norm_state,
+        penalize_std=should_penalize_std)
     
     return population
 

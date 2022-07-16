@@ -104,8 +104,9 @@ def fill_rewards(config, trees, alpha, episodes=10, should_normalize_state=False
             rewards.append(total_reward)
 
         # tree.reward = total_rewards / episodes
-        tree.reward = np.mean(rewards) - np.std(rewards) if penalize_std else np.mean(rewards)
-        tree.fitness = tree.reward - alpha * tree.get_tree_size()
+        tree.reward = np.mean(rewards)
+        penalized_reward = np.mean(rewards) - np.std(rewards) if penalize_std else np.mean(rewards)
+        tree.fitness = penalized_reward - alpha * tree.get_tree_size()
     
     env.close()
 

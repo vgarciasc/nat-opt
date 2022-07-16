@@ -19,11 +19,14 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
     should_render=False, render_every=None,
     norm_state=False, should_adapt_sigma=False,
 	should_atenuate_alpha=False,
+    should_penalize_std=False,
     should_consider_top_splits=False, top_splits_quantity=20,
     verbose=False):
 
     # Initialization
-    population = initialize_population(config, initial_depth, lamb, initial_pop, norm_state)
+    population = initialize_population(config, initial_depth, lamb,
+        initial_pop, 0 if should_atenuate_alpha else alpha,
+        norm_state, should_penalize_std)
     best = population[np.argmax([i.fitness for i in population])]
     evaluations = 0
     evaluations_to_success = 0
@@ -53,7 +56,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
                 child.reward = calc_reward(child, 
                     episodes=fit_episodes, 
                     norm_state=norm_state, 
-                    penalize_std=True)
+                    penalize_std=should_penalize_std)
                 child.fitness = child.reward - curr_alpha * child.get_tree_size()
                 child_population.append(child)
                 evaluations += 1                
@@ -65,7 +68,8 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
             else:
                 elites = population[:int(elitism * lamb)]
                 fill_rewards(config, elites, curr_alpha, 
-                    fit_episodes, should_normalize_state=norm_state)
+                    fit_episodes, should_normalize_state=norm_state,
+                    penalize_std=should_penalize_std)
                 population = child_population + elites
         else:
             candidate_population = population + child_population
@@ -87,13 +91,17 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         min_size = individual_max_fitness.get_tree_size()
         avg_size = np.mean(tree_sizes)
         std_size = np.std(tree_sizes)
+        avg_fitness = np.mean(fitnesses)
 
         history.append(((max_reward, avg_reward, std_reward),
                         (min_size, avg_size, std_size)))
 
+        print(f"Best fitness: (reward: {'{:.3f}'.format(best.reward)}, fitness: {'{:.3f}'.format(best.fitness)})")
+        print(f"Individual max fitness: (reward: {'{:.3f}'.format(individual_max_fitness.reward)}, fitness: {'{:.3f}'.format(individual_max_fitness.fitness)})")
         if individual_max_fitness.fitness > best.fitness:
             fill_rewards(config, [individual_max_fitness], curr_alpha,
-                episodes=100, should_normalize_state=norm_state)
+                episodes=100, should_normalize_state=norm_state, penalize_std=should_penalize_std)
+            print(f"Individual max fitness (rechecked): (reward: {'{:.3f}'.format(individual_max_fitness.reward)}, fitness: {'{:.3f}'.format(individual_max_fitness.fitness)})")
             if individual_max_fitness.fitness > best.fitness:
                 if should_consider_top_splits:
                     splits = [(node.attribute, node.threshold) for node in individual_max_fitness.tree.get_node_list() if not node.is_leaf]
@@ -101,25 +109,12 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
                     top_splits = top_splits[-top_splits_quantity:]
                 best = individual_max_fitness.copy()
         
-        # Checking for success
-        if max_reward >= 490:
-            if evaluations_to_success == 0:
-                reward_precise = calc_reward(individual_max_fitness, episodes=50, norm_state=norm_state)
-                printv(f"Checking for break: (reward: {max_reward}, precise reward: {reward_precise}, tree_size: {individual_max_fitness.get_tree_size()})", verbose)
-                if reward_precise >= 490:
-                    evaluations_to_success = evaluations
-            if individual_max_fitness.get_tree_size() <= 5:
-                reward_precise = calc_reward(individual_max_fitness, episodes=50, norm_state=norm_state)
-                printv(f"Checking for break: (reward: {max_reward}, precise reward: {reward_precise}, tree_size: {individual_max_fitness.get_tree_size()})", verbose)
-                if reward_precise >= 490:
-                    best = individual_max_fitness.copy()
-                    break
-        
         # Printing
         if verbose:
             console.rule(f"[bold red]Generation #{generation}")
-            printv(f"[underline]Reward[/underline]: {{[green]Best: {'{:.3f}'.format(individual_max_fitness.reward)}[/green], [yellow]Avg: {'{:.3f}'.format(avg_reward)}[/yellow]}}", verbose)
-            printv(f"[underline]Size  [/underline]: {{[green]Best: {individual_max_fitness.get_tree_size()}[/green], [yellow]Avg: {'{:.3f}'.format(avg_size)}[/yellow]}}", verbose)
+            printv(f"[underline]Fitness[/underline]: {{[green]All best: {'{:.3f}'.format(best.fitness)}[/green], [yellow]Gen best: {'{:.3f}'.format(individual_max_fitness.fitness)}[/yellow], [grey]Avg: {'{:.3f}'.format(avg_fitness)}[/grey]}}", verbose)
+            printv(f"[underline]Reward [/underline]: {{[green]All best: {'{:.3f}'.format(best.reward)}[/green], [yellow]Gen best: {'{:.3f}'.format(individual_max_fitness.reward)}[/yellow], [grey]Avg: {'{:.3f}'.format(avg_reward)}[/grey]}}", verbose)
+            printv(f"[underline]Size   [/underline]: {{[green]All best: {best.get_tree_size()}[/green], [yellow]Gen best: {individual_max_fitness.get_tree_size()}[/yellow], [grey]Avg: {'{:.3f}'.format(avg_size)}[/grey]}}", verbose)
             printv(f"{' ' * 3} - Best Sigma: {best.sigma})", verbose and should_adapt_sigma)
             printv(f"{' ' * 3} - Avg Sigma: {np.mean([i.sigma for i in population], axis=0)}", verbose and should_adapt_sigma)
 
@@ -163,7 +158,7 @@ def run_evolutionary_strategy(config, mu, lamb, generations,
         plt.show()
     
     if should_save_plot:
-        figure_file = "data/plots/" + config['task'] + "_" + datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + ".png"
+        figure_file = "data/plots/" + config['name'] + "_" + datetime.now().strftime("%Y_%m_%d-%H_%M_%S") + ".png"
         print(f"Saving figure to '{figure_file}'.")
         plt.savefig(figure_file)
     
@@ -185,9 +180,10 @@ if __name__ == "__main__":
     parser.add_argument('--mutation_qt',help="How many mutations to execute?", required=False, default=1, type=int)
     parser.add_argument('--output_path', help="Path to save files", required=False, default=None, type=str)
     parser.add_argument('--alpha',help="How to penalize tree size?", required=True, type=float)
-    parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_adapt_sigma', help='Should adapt sigma?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_atenuate_alpha', help='Should atenuate alpha?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--should_consider_top_splits', help='Should consider top splits?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
+    parser.add_argument('--should_penalize_std', help='Should penalize standard deviation?', required=False, default=True, type=lambda x: (str(x).lower() == 'true'))
     parser.add_argument('--top_splits_to_consider', help="Number of top splits to consider", required=False, default=10, type=int)
     parser.add_argument('--episodes', help='Number of episodes to run when evaluating model', required=False, default=10, type=int)
     parser.add_argument('--should_plot', help='Should plot performance?', required=False, default=False, type=lambda x: (str(x).lower() == 'true'))
@@ -232,6 +228,7 @@ if __name__ == "__main__":
             render_every=args['render_every'],
             should_adapt_sigma=args['should_adapt_sigma'],
             should_atenuate_alpha=args['should_atenuate_alpha'],
+            should_penalize_std=args['should_penalize_std'],
             should_consider_top_splits=args['should_consider_top_splits'],
             top_splits_quantity=args['top_splits_to_consider'],
             should_render=args['should_render'],
