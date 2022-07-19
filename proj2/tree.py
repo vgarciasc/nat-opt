@@ -21,11 +21,15 @@ class TreeNode:
         self.right = right
         self.parent = parent
 
+        self.visits = 0
+
     def __str__(self):
         return f"[attrib: {self.attribute}, threshold: {self.threshold}, " + \
             f"label: {self.label}, is_leaf: {self.is_leaf}]"
 
     def act(self, state):
+        self.visits += 1
+
         if self.is_leaf:
             return self.label
         
@@ -67,7 +71,7 @@ class TreeNode:
             output += "-" * depth + " "
 
             if node.is_leaf:
-                output += (self.config['actions'][node.label]).upper()
+                output += (self.config['actions'][node.label]).upper() + f" (v: {node.visits})"
                 # output += (self.config['actions'][np.argmax(node.q_values)]).upper() + " " + str(node.q_values)
             else:
                 output += self.config['attributes'][node.attribute][0]

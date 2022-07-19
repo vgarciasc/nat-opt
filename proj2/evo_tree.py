@@ -175,6 +175,20 @@ class EvoTreeNode(TreeNode):
         
         self.parent = self.parent.parent
 
+    def prune_by_visits(self, threshold=1):
+        if self.is_leaf:
+            return
+            
+        if self.left.visits < threshold:
+            self.right.cut_parent()
+            self.right.prune_by_visits()
+        elif self.right.visits < threshold:
+            self.left.cut_parent()
+            self.left.prune_by_visits()
+        else:
+            self.left.prune_by_visits()
+            self.right.prune_by_visits()
+
     def mutate_A(self, sigma=None, top_splits=[]):
         node = self.get_random_node()
 
@@ -320,6 +334,14 @@ class EvoTreeNode(TreeNode):
         if not self.is_leaf:
             self.left.normalize_thresholds()
             self.right.normalize_thresholds()
+    
+    def denormalize_thresholds(self):
+        (_, _, (xmin, xmax)) = self.config["attributes"][self.attribute]
+        self.threshold = (self.threshold + 1) * (xmax - xmin) / 2 + xmin
+
+        if not self.is_leaf:
+            self.left.denormalize_thresholds()
+            self.right.denormalize_thresholds()
 
     def copy(self):
         if self.is_leaf:
@@ -443,15 +465,16 @@ if __name__ == "__main__":
     # Our DT obtained via EA: MOUNTAIN CAR
     # string = "\n- Car Velocity <= -0.043\n -- LEFT\n -- Car Position <= 0.577\n --- Car Velocity <= 0.043\n ---- Car Position <= -0.210\n ----- RIGHT\n ----- LEFT\n ---- RIGHT\n --- RIGHT"
     # string = "\n- Car Velocity <= 0.204\n -- Car Velocity <= -0.008\n --- LEFT\n --- Car Position <= -0.156\n ---- RIGHT\n ---- LEFT\n -- RIGHT"
-    string = "\n- Car Position <= -0.16667\n-- Car Velocity <= -0.01089\n--- LEFT\n--- RIGHT\n-- Car Velocity <= 0.20175\n--- LEFT\n--- RIGHT"
-    config = get_config("mountain_car")
-    norm_state=True
+    # string = "\n- Car Position <= -0.16667\n-- Car Velocity <= -0.01089\n--- LEFT\n--- RIGHT\n-- Car Velocity <= 0.20175\n--- LEFT\n--- RIGHT"
+    # config = get_config("mountain_car")
+    # norm_state=True
     #string = "\n- Car Velocity <= 0.17591\n -- Car Position <= -0.16632\n --- Car Velocity <= -0.01995\n ---- LEFT \n---- Car Position <= 0.60000\n ----- RIGHT\n ----- NOP\n --- LEFT\n -- RIGHT"
     # string = "\n- Car Velocity <= 0.28430\n-- Car Position <= -0.15196\n--- Car Velocity <= -0.02208\n---- LEFT\n---- RIGHT\n--- LEFT\n-- RIGHT"
-    # config = get_config("lunar_lander")
+    config = get_config("lunar_lander")
     # string = "\n- X Velocity <= -0.530\n-- RIGHT ENGINE\n-- Y Velocity <= -0.140\n--- Angle <= -0.010\n---- LEFT ENGINE\n---- MAIN ENGINE\n--- Angular Velocity <= -0.003\n---- Leg 2 is Touching <= 0.500\n----- X Position <= 0.033\n------ NOP\n------ Leg 2 is Touching <= 0.500\n------- LEFT ENGINE\n------- X Position <= 0.417\n-------- X Position <= 0.433\n--------- MAIN ENGINE\n--------- Angular Velocity <= 0.047\n---------- RIGHT ENGINE\n---------- NOP\n-------- Angular Velocity <= 0.886\n--------- LEFT ENGINE\n--------- RIGHT ENGINE\n----- MAIN ENGINE\n---- Leg 2 is Touching <= -0.953\n----- RIGHT ENGINE\n----- LEFT ENGINE"
     # string = "\n- Y Velocity <= 0.37860\n-- Y Position <= 0.15\n--- NOP\n--- Y Position <= 0.55027\n---- MAIN ENGINE\n---- X Position <= 0.52334\n----- Angle <= 0.00372\n------ LEFT ENGINE\n------ X Position <= 0.69662\n------- RIGHT ENGINE\n------- Y Position <= 0.81893\n-------- MAIN ENGINE\n-------- LEFT ENGINE\n----- RIGHT ENGINE\n-- LEFT ENGINE"
-    # norm_state=True
+    string = "\n- Leg 1 is Touching <= 0.90099\n-- Angle <= -0.05699\n--- Y Velocity <= -0.20700\n---- Angular Velocity <= -0.17600\n----- LEFT ENGINE\n----- Y Position <= 0.41000\n------ MAIN ENGINE\n------ X Velocity <= -0.05300\n------- MAIN ENGINE\n------- Angular Velocity <= 0.11200\n-------- LEFT ENGINE\n-------- MAIN ENGINE\n---- X Velocity <= 0.06200\n----- RIGHT ENGINE\n----- LEFT ENGINE\n--- Y Velocity <= -0.08300\n---- X Velocity <= -0.06500\n----- RIGHT ENGINE\n----- Y Position <= 0.24701\n------ MAIN ENGINE\n------ Y Velocity <= -0.23500\n------- Angle <= 0.22799\n-------- X Position <= -0.02599\n--------- Angular Velocity <= 0.08500\n---------- MAIN ENGINE\n---------- RIGHT ENGINE\n--------- Leg 2 is Touching <= 0.99158\n---------- MAIN ENGINE\n---------- LEFT ENGINE\n-------- X Velocity <= 0.15200\n--------- RIGHT ENGINE\n--------- Angle <= 1.26082\n---------- MAIN ENGINE\n---------- RIGHT ENGINE\n------- NOP\n---- NOP\n-- X Position <= -0.44771\n-- MAIN ENGINE\n-- Y Velocity <= -0.06800\n--- MAIN ENGINE\n--- X Position <= 0.00000\n---- NOP\n---- LEFT ENGINE"
+    norm_state=False
 
     # Our DT obtained via CMA-ES: Cartpole
     # config = get_config("cartpole")
@@ -459,7 +482,10 @@ if __name__ == "__main__":
     # norm_state = True
 
     tree = EvoTreeNode.read_from_string(config, string=string)
+    if norm_state:
+        tree.denormalize_thresholds()
     print(tree)
+    print(f"Tree size: {tree.get_tree_size()} nodes")
 
     # history = []
     # for _ in range(10000):
@@ -475,6 +501,17 @@ if __name__ == "__main__":
     # pdb.set_trace()
 
     print("[yellow]> Evaluating fitness:[/yellow]")
-    print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=1000, should_normalize_state=norm_state)}")
+    # print(f"Mean reward, std reward: {utils.evaluate_fitness(config, tree, episodes=1000, should_normalize_state=norm_state)}")
 
-    utils.evaluate_fitness(config, tree, 10, should_normalize_state=norm_state, render=True, verbose=True)
+    rewards = [utils.calc_reward(tree, episodes=1, norm_state=False, penalize_std=False) for _ in range(10)]
+    success_rate = np.mean([1 if r > 200 else 0 for r in rewards])
+    print(f"Mean reward, std reward: {np.mean(rewards)} +- {np.std(rewards)}, SR: {success_rate}")
+
+    print(tree)
+
+    print("PRUNE BY VISITS...")
+
+    tree.prune_by_visits()
+    print(tree)
+
+    utils.evaluate_fitness(config, tree, 10, should_normalize_state=False, render=True, verbose=True)

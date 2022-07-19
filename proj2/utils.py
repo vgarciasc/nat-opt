@@ -64,6 +64,11 @@ def evaluate_fitness(config, tree, episodes=10, should_normalize_state=False, re
                 env.render()
             next_state, reward, done, _ = env.step(action)
 
+            # if verbose:
+            #     for (i, (name, _, (xmin, xmax))) in enumerate(config["attributes"]):
+            #         print(f"{name}: {state[i]}")
+            #     print("--------")
+
             state = next_state
             total_reward += reward
 
